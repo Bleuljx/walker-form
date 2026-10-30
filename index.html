@@ -4388,9 +4388,11 @@ function bindEvents() {
 }
 
 /* ---------- 运行环境提示 ----------
-   微信 / 企业微信里点开 .html 附件走的是「只读预览」，不是真浏览器：
-   页面能看见，但打字、上传照片、保存草稿全都失效；iOS 上系统浏览器
-   也不允许直接运行本地 HTML 文件。这里给一条明确的提示，别让人干瞪眼。 */
+   只有「真的用不了」才提示：
+   1) 本地文件 + 微信/企微 = 只读预览，输入和存储都失效
+   2) 本地文件 + 手机浏览器 = 系统不允许运行本地 HTML
+   3) 存储被禁用（无痕模式等）
+   网页版（https 链接）即使身在微信内也是完整网页，能正常填写，不再误报。 */
 function showEnvNotice() {
   try {
     var ua = navigator.userAgent || '';
@@ -4400,13 +4402,13 @@ function showEnvNotice() {
     var storeOk = true;
     try { localStorage.setItem('__zc_probe__', '1'); localStorage.removeItem('__zc_probe__'); } catch (e) { storeOk = false; }
     var msg = '';
-    if (inApp) {
-      msg = '当前是在微信 / 企业微信的「文件预览」里打开，属于只读预览：能看，但打字、传照片、保存草稿都用不了。' +
-            '请点右上角「···」→ 用浏览器打开；如果选不到浏览器，就改用网页版链接（向工具管理员索取）在手机浏览器里填写。';
+    if (isFile && inApp) {
+      msg = '当前是在微信 / 企业微信里打开本地文件，属于只读预览：能看，但打字、传照片、保存草稿都用不了。' +
+            '请点右上角「···」→ 用浏览器打开；或改用网页版链接（可添加到手机桌面）。';
     } else if (isFile && mobile) {
       msg = '手机系统不允许浏览器直接运行本地 HTML 文件，填写和保存会失效。请改用网页版链接打开（可添加到手机桌面）。';
     } else if (!storeOk) {
-      msg = '当前环境禁用了本地存储（只读预览 / 无痕模式），填写的内容不会被保存，请填完立刻导出走场包。';
+      msg = '当前环境禁用了本地存储（无痕模式 / 只读预览），填写的内容不会被保存，请填完立刻导出走场包。';
     }
     if (!msg) return;
     var bar = document.createElement('div');
