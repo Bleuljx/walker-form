@@ -1,0 +1,16 @@
+{
+  "name": "走场填表工具",
+  "short_name": "走场填表",
+  "description": "万净环卫片区人事主管走场信息填写与海报导出工具",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F2F2",
+  "theme_color": "#27AE60",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
