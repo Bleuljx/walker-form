@@ -234,6 +234,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .form-row-2col {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     }
+    /* 血压条目：项目 / 测量总人数 / 请假人数 */
+    .form-row-3col {
+      display: grid; grid-template-columns: 1.25fr .8fr .8fr; gap: 8px;
+    }
 
     /* ---------- 可搜索下拉（外观与 .form-input 一致） ---------- */
     .ss { position: relative; width: 100%; }
@@ -483,9 +487,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .bp-table td input:focus { border-color: var(--primary); background: #fff; outline: none; }
     .bp-table .level-cell { font-weight: 600; font-size: 11px; }
     .bp-table .lvl-正常 { color: var(--success); }
-    .bp-table .lvl-一级预警 { color: var(--warning); }
-    .bp-table .lvl-二级预警 { color: #FA8C16; }
-    .bp-table .lvl-三级预警 { color: var(--danger); }
+    .bp-table .lvl-一级预警 { color: #E67E22; }
+    .bp-table .lvl-二级预警 { color: #F0501E; }
+    .bp-table .lvl-三级预警 { color: #B71C1C; }
     .bp-table .row-del {
       cursor: pointer; color: var(--text-mute); font-size: 12px;
     }
@@ -500,6 +504,26 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       color: var(--text);
     }
     .bp-summary b { color: var(--primary); }
+    .bp-summary .bp-warn {
+      color: #B45309; background: #FFF7E6; border: 1px solid #FFE0A3;
+      padding: 1px 6px; border-radius: 4px; font-size: 11px;
+    }
+    /* 血压卡片内的小标题：异常明细 / 未测人员明细 */
+    .bp-sub-h {
+      display: flex; align-items: baseline; gap: 8px;
+      margin: 12px 0 5px; font-size: 12px; font-weight: 600; color: #374151;
+    }
+    .bp-sub-h .bp-sub-tip { font-weight: 400; font-size: 11px; color: var(--text-mute); margin-left: 2px; }
+    .bp-table.bp-um td { vertical-align: middle; }
+    .bp-table.bp-um select.bp-reason {
+      width: 100%; height: 26px; border: 1px solid #E5E7EB; border-radius: 3px;
+      font-size: 12px; padding: 0 4px; background: #fff; color: var(--text);
+      text-align: center;
+    }
+    .bp-table.bp-um select.bp-reason:focus { border-color: var(--primary); outline: none; }
+    .bp-table .bp-um-empty {
+      text-align: center; color: var(--text-mute); font-size: 11px; padding: 8px;
+    }
     /* 次月走场计划：卡片式，避免窄栏里表格列被压到吞字 */
     .plan-list { display: flex; flex-direction: column; gap: 10px; }
     .plan-item {
@@ -826,10 +850,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       color: var(--primary); font-weight: 700; white-space: nowrap;
     }
     .p2-sum .k .kk { flex: 1; display: inline-flex; justify-content: space-between; }
+    .p2-sum .k .kk.kk-s { flex: none; justify-content: flex-start; gap: .04em; }
     .p2-sum .k em { font-style: normal; }
     .p2-sum .v { flex: 1; min-width: 0; }
     .p2-sum .v b { font-weight: 700; }
-    .p2-sum .warn { color: #E23D3D; font-weight: 700; }
+    .p2-sum .v .bp-extra { margin-top: 2px; font-size: 15.5px; color: #333; }
+    .p2-sum .warn { color: #B71C1C; font-weight: 700; }
+    /* 血压分级：一级橙 / 二级橙红 / 三级深红，只标人数不写名字 */
+    .p2-sum .warn.lv1 { color: #E67E22; }
+    .p2-sum .warn.lv2 { color: #F0501E; }
+    .p2-sum .warn.lv3 { color: #B71C1C; }
     .p2-sum .ok { color: #16A34A; font-weight: 700; }
     .p2-sum .muted { color: #6B7280; }
     .p2-sec { margin-top: 26px; }
@@ -850,7 +880,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     table.p2-bp th { background: var(--danger, #EF4444); color: #fff; padding: 8px 6px; font-weight: 600; font-size: 13px; }
     table.p2-bp td { border: 1px solid #F1C9C9; padding: 7px 6px; text-align: center; color: #000; }
     table.p2-bp tr:nth-child(even) td { background: #FEF7F7; }
-    table.p2-bp td.l3 { color: var(--danger, #EF4444); font-weight: 700; }
+    table.p2-bp td.l1 { color: #E67E22; font-weight: 700; }
+    table.p2-bp td.l2 { color: #F0501E; font-weight: 700; }
+    table.p2-bp td.l3 { color: #B71C1C; font-weight: 700; }
     .p2-photos { display: flex; gap: 22px; align-items: stretch; }
     .p2-photos .grid { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
     .p2-ph {
@@ -1433,8 +1465,10 @@ const State = {
     photos: []
   },
   bp: {
-    entries: [], // [{id, project, total, details:[{name, systolic, diastolic}]}] 一天走多个项目时按项目分组；total=手工填的测量总人数
+    entries: [], // [{id, project, expect, actual, unmeasured:[{name,reason}], details:[{name,systolic,diastolic}]}]；expect=应测人数，actual=实测人数，leave=旧版请假数字（兼容保留）
     details: [], // 由 entries 汇总（每行带 project），仅供海报 / 导出 / 报告工具兼容读取
+    leave: 0,    // 由 entries 汇总的请假人数（旧字段 + 未测明细里原因为「请假」的行）
+    note: '',    // 其他情况反馈（整次走场一条）
     photos: []   // [{name, dataUrl}]
   },
   voice: {
@@ -1515,6 +1549,35 @@ function normalizeState() {
   if (!Array.isArray(State.bp.entries)) State.bp.entries = [];
   if (!Array.isArray(State.bp.details)) State.bp.details = [];
   if (!Array.isArray(State.bp.photos)) State.bp.photos = [];
+  if (typeof State.bp.note !== 'string') State.bp.note = '';
+  if (!isFinite(+State.bp.leave)) State.bp.leave = 0;
+  // 老草稿没有请假人数：留空（海报按 0 显示），不要写成 0 字符串占位
+  State.bp.entries.forEach(e => {
+    if (!e || typeof e !== 'object') return;
+    if (e.leave == null) e.leave = '';
+    if (!Array.isArray(e.unmeasured)) e.unmeasured = [];
+    // 旧版 total = 实测人数，请假人数另填 → 应测 = 实测 + 请假，保证「正常」不被算多
+    const legacyTotal = (e.total != null && e.total !== '') ? (+e.total || 0) : 0;
+    if (e.expect == null) e.expect = legacyTotal ? String(legacyTotal + (+e.leave || 0)) : '';
+    if (e.actual == null) e.actual = (legacyTotal && e.expect !== '' && +e.leave > 0) ? String(legacyTotal) : '';
+    // 旧版只填了请假「人数」没填姓名 → 补成占位行（原因为请假），
+    // 否则会出现「未测 0 人、请假 2 人」这种对不上的数据
+    if (+e.leave > 0 && !e.unmeasured.length) {
+      e.unmeasured = Array.from({ length: +e.leave }, () => ({ name: '', reason: '请假' }));
+      e.leave = '';
+    }
+    if (typeof e.note !== 'string') e.note = '';
+    e.unmeasured.forEach(r => {
+      if (!r || typeof r !== 'object') return;
+      if (typeof r.name !== 'string') r.name = '';
+      if (typeof r.reason !== 'string') r.reason = '';
+    });
+  });
+  // 老草稿：整次走场一条的「其他情况反馈」并入第一条项目，避免升级后丢内容
+  if (typeof State.bp.note === 'string' && State.bp.note.trim()) {
+    const first = State.bp.entries[0];
+    if (first && !String(first.note || '').trim()) first.note = State.bp.note;
+  }
   if (!State.voice || typeof State.voice !== 'object') State.voice = {};
   if (!Array.isArray(State.voice.lines)) State.voice.lines = [];
   if (!Array.isArray(State.voice.photos)) State.voice.photos = [];
@@ -1679,6 +1742,24 @@ function syncModuleAggregates() {
       .filter(r => r && (r.name || r.systolic || r.diastolic))
       .map(r => ({ project: e.project || '', name: r.name || '', systolic: r.systolic || '', diastolic: r.diastolic || '' }))
   ), []);
+  // 未测人员明细：entries → 扁平（每行带 project），导出 / 报告工具用
+  S.bp.unmeasured = (S.bp.entries || []).reduce((a, e) => a.concat(
+    bpEntryUnmeasured(e).map(r => ({ project: e.project || '', name: String(r.name || '').trim(), reason: String(r.reason || '').trim() }))
+  ), []);
+  // 应测 / 实测 / 未测 / 请假 合计（没填的按明细反推）
+  S.bp.expectTotal = bpExpectCount();
+  S.bp.actualTotal = bpActualCount();
+  S.bp.unmeasuredCount = bpUnmeasuredCount();
+  S.bp.leave = bpLeaveCount();
+  // 其他情况反馈：按项目汇总成一条字符串（兼容旧字段 / 报告工具）
+  S.bp.note = (S.bp.entries || [])
+    .map(e => {
+      const t = String((e || {}).note || '').replace(/\s*\n+\s*/g, ' ').trim();
+      if (!t) return '';
+      return (e.project ? '【' + e.project + '】' : '') + t;
+    })
+    .filter(Boolean)
+    .join('；');
 
   // 文化检查：聚合成扁平字段（海报汇总 / 导出兼容）
   const culEntries = S.culture.entries || [];
@@ -2176,39 +2257,102 @@ function bpAdvice(lvl) {
 }
 
 function blankBpEntry(project) {
-  return { id: uid(), project: project || '', total: '', details: [{ name: '', systolic: '', diastolic: '' }] };
+  return {
+    id: uid(), project: project || '',
+    expect: '',   // 应测人数（含请假、外出等未测）
+    actual: '',   // 实测人数
+    leave: '',    // 旧版请假数字，只做兼容；新数据走 unmeasured
+    unmeasured: [],                                       // [{name, reason}] 未测人员明细
+    note: '',                                             // 本项目其他情况反馈
+    details: [{ name: '', systolic: '', diastolic: '' }]  // 异常明细（只填异常的人）
+  };
 }
 
-// 血压实测总人数：优先用手工填的「测量总人数」，没填的项目回落到明细行数
-function bpTotalCount() {
-  const ents = State.bp.entries || [];
-  let n = 0;
-  ents.forEach(e => {
-    if (!e) return;
-    const t = +e.total || 0;
-    if (t > 0) { n += t; return; }
-    n += (e.details || []).filter(r => r && (r.name || r.systolic || r.diastolic)).length;
+// 异常明细行（有姓名或血压值才算）
+function bpEntryRows(e) {
+  return ((e || {}).details || []).filter(r => r && (r.name || r.systolic || r.diastolic));
+}
+// 未测明细行（有姓名或原因才算）
+function bpEntryUnmeasured(e) {
+  return ((e || {}).unmeasured || []).filter(r => r && (String(r.name || '').trim() || String(r.reason || '').trim()));
+}
+// 应测人数：手填优先；没填 = 实测 + 未测行数（再兜底为异常行数）
+function bpExpectCount() {
+  return (State.bp.entries || []).reduce((a, e) => {
+    if (!e) return a;
+    const t = +e.expect || 0;
+    if (t > 0) return a + t;
+    const act = +e.actual || 0;
+    if (act > 0) return a + act + bpEntryUnmeasured(e).length;
+    return a + bpEntryRows(e).length;
+  }, 0);
+}
+// 实测人数：手填优先；没填 = 应测 − 未测行数
+function bpActualCount() {
+  return (State.bp.entries || []).reduce((a, e) => {
+    if (!e) return a;
+    const t = +e.actual || 0;
+    if (t > 0) return a + t;
+    const exp = +e.expect || 0;
+    if (exp > 0) return a + Math.max(0, exp - bpEntryUnmeasured(e).length);
+    return a + bpEntryRows(e).length;
+  }, 0);
+}
+// 未测人数（明细行数合计）
+function bpUnmeasuredCount() {
+  return (State.bp.entries || []).reduce((a, e) => a + bpEntryUnmeasured(e).length, 0);
+}
+// 请假人数：原因为「请假」的明细行 + 旧版手填数字（老草稿兼容）
+function bpLeaveCount() {
+  const byRows = (State.bp.entries || []).reduce((a, e) =>
+    a + bpEntryUnmeasured(e).filter(r => /请假|休假/.test(String(r.reason || ''))).length, 0);
+  const legacy = (State.bp.entries || []).reduce((a, e) => a + (+((e || {}).leave) || 0), 0);
+  return byRows + legacy;
+}
+// 未测原因分类统计：{ 请假: n, "外出/出差": n, ... }
+function bpUnmeasuredByReason() {
+  const out = {};
+  (State.bp.entries || []).forEach(e => {
+    bpEntryUnmeasured(e).forEach(r => {
+      const k = String(r.reason || '').trim() || '未填原因';
+      out[k] = (out[k] || 0) + 1;
+    });
   });
-  return n;
+  return out;
 }
-// 有手工填过总人数？
-function bpHasManualTotal() {
-  return (State.bp.entries || []).some(e => e && +e.total > 0);
+// 兼容旧调用名（老代码 / 报告工具里还有 bpTotalCount）
+function bpTotalCount() { return bpActualCount(); }
+function bpHasManualTotal() { return (State.bp.entries || []).some(e => e && +e.actual > 0); }
+
+// 未测原因选项（可自定义：老数据里的自由文本会作为额外选项保留）
+const BP_UNMEASURED_REASONS = ['请假', '外出/出差', '休息/调休', '拒测/未配合', '其他'];
+function bpReasonOptionsHtml(cur) {
+  const c = String(cur || '');
+  const list = BP_UNMEASURED_REASONS.slice();
+  if (c && list.indexOf(c) < 0) list.push(c);
+  return '<option value="">选择原因</option>' + list.map(r =>
+    `<option value="${escapeAttr(r)}"${r === c ? ' selected' : ''}>${escapeHtml(r)}</option>`).join('');
 }
 
-// 血压预警：一个项目一块，块内是该项目测过的所有人
+// 血压预警：一个项目一块 —— 应测/实测 + 异常明细 + 未测人员明细
 function renderBPTable() {
   const box = document.getElementById('bpEntries');
   if (!box) return;
   if (!State.bp.entries.length) State.bp.entries.push(blankBpEntry());
 
-  box.innerHTML = State.bp.entries.map((e, i) => entryShell('bp', e, i, `
-    <div class="form-row form-row-2col">
+  box.innerHTML = State.bp.entries.map((e, i) => {
+    const um = e.unmeasured || [];
+    return entryShell('bp', e, i, `
+    <div class="form-row form-row-3col">
       <div><label>所属项目</label>${projectSelectHtml(e)}</div>
-      <div><label>测量总人数</label>
-        <input type="number" class="form-input" min="0" data-bptotal="${e.id}"
-          value="${escapeAttr(e.total)}" placeholder="该项目实测人数" /></div>
+      <div><label>应测人数</label>
+        <input type="number" class="form-input" min="0" data-bpexpect="${e.id}"
+          value="${escapeAttr(e.expect)}" placeholder="含请假未测" /></div>
+      <div><label>实测人数</label>
+        <input type="number" class="form-input" min="0" data-bpactual="${e.id}"
+          value="${escapeAttr(e.actual)}" placeholder="实际测到" /></div>
     </div>
+    <div class="bp-sub-h">异常明细<span class="bp-sub-tip">只填测出异常的人，正常的人不用录</span></div>
     <table class="bp-table">
       <thead>
         <tr>
@@ -2235,11 +2379,37 @@ function renderBPTable() {
       </tbody>
     </table>
     <div class="bp-actions" style="margin-top:6px;">
-      <button type="button" class="btn" style="font-size:11px;padding:3px 8px;" data-bpaddrow="${e.id}">+ 添加明细</button>
+      <button type="button" class="btn" style="font-size:11px;padding:3px 8px;" data-bpaddrow="${e.id}">+ 添加异常人员</button>
       <button type="button" class="btn" style="font-size:11px;padding:3px 8px;" data-bpimp="${e.id}">📥 导入本项目</button>
       <input type="file" accept=".xlsx,.xls,.csv" style="display:none" data-bpfile="${e.id}" />
     </div>
-  `)).join('');
+    <div class="bp-sub-h">未测人员明细<span class="bp-sub-tip">请假、外出、拒测等没测到的人，一人一行</span></div>
+    <table class="bp-table bp-um">
+      <thead>
+        <tr>
+          <th style="width:20px;"></th>
+          <th>姓名</th>
+          <th>未测原因</th>
+          <th style="width:20px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${um.length ? um.map((row, ri) => `<tr>
+          <td style="color:var(--text-mute);font-size:11px;">${ri + 1}</td>
+          <td><input type="text" data-bpumf="name" data-eid="${e.id}" data-ri="${ri}" value="${escapeAttr(row.name)}" placeholder="姓名" /></td>
+          <td><select class="bp-reason" data-bpumf="reason" data-eid="${e.id}" data-ri="${ri}">${bpReasonOptionsHtml(row.reason)}</select></td>
+          <td><span class="row-del" data-bpumdel="${e.id}:${ri}" title="删除">×</span></td>
+        </tr>`).join('') : `<tr><td colspan="4" class="bp-um-empty">没有未测人员</td></tr>`}
+      </tbody>
+    </table>
+    <div class="bp-actions" style="margin-top:6px;">
+      <button type="button" class="btn" style="font-size:11px;padding:3px 8px;" data-bpumadd="${e.id}">+ 添加未测人员</button>
+    </div>
+    <div class="bp-sub-h">其他情况反馈<span class="bp-sub-tip">复测安排、员工配合情况等，可留空</span></div>
+    <textarea class="form-input form-textarea bp-note" rows="2" data-bpnote="${e.id}"
+      placeholder="如：未测人员已约定下周一补测">${escapeHtml(e.note || '')}</textarea>
+  `);
+  }).join('');
 
   // 所属项目：可搜索下拉
   box.querySelectorAll('select[data-field="project"]').forEach(el => {
@@ -2251,14 +2421,15 @@ function renderBPTable() {
     const entry = State.bp.entries.find(x => x.id === wrap.dataset.eid);
     if (!entry) return;
 
+    // 只改数字/文本时不重绘表格，避免输入框失焦
+    const refreshSoft = () => { syncModuleAggregates(); renderBPSummary(); renderPoster(); };
+
     const sel = wrap.querySelector('select[data-field="project"]');
     if (sel) sel.addEventListener('change', () => {
       if (!applyProjectChange(entry, sel)) return;
       wrap.querySelector('.entry-head .en').textContent =
         entryTitle('bp', State.bp.entries.indexOf(entry), entry);
-      syncModuleAggregates();
-      renderBPSummary();
-      renderPoster();
+      refreshSoft();
     });
 
     wrap.querySelector('.delx').addEventListener('click', () => {
@@ -2270,14 +2441,13 @@ function renderBPTable() {
       renderPoster();
     });
 
-    const totalInp = wrap.querySelector('input[data-bptotal]');
-    if (totalInp) totalInp.addEventListener('input', () => {
-      entry.total = totalInp.value;
-      syncModuleAggregates();
-      renderBPSummary();
-      renderPoster();
-    });
+    const expInp = wrap.querySelector('input[data-bpexpect]');
+    if (expInp) expInp.addEventListener('input', () => { entry.expect = expInp.value; refreshSoft(); });
 
+    const actInp = wrap.querySelector('input[data-bpactual]');
+    if (actInp) actInp.addEventListener('input', () => { entry.actual = actInp.value; refreshSoft(); });
+
+    // 异常明细：姓名 / 收缩压 / 舒张压
     wrap.querySelectorAll('input[data-bpf]').forEach(inp => {
       inp.addEventListener('input', () => {
         const row = (entry.details || [])[+inp.dataset.ri];
@@ -2289,9 +2459,7 @@ function renderBPTable() {
           cell.textContent = lvl || '—';
           cell.className = 'level-cell ' + (lvl ? 'lvl-' + lvl : '');
         }
-        syncModuleAggregates();
-        renderBPSummary();
-        renderPoster();
+        refreshSoft();
       });
     });
 
@@ -2311,7 +2479,49 @@ function renderBPTable() {
       entry.details.push({ name: '', systolic: '', diastolic: '' });
       syncModuleAggregates();
       renderBPTable();
+      renderPoster();
     });
+
+    // 未测明细：姓名 / 原因
+    wrap.querySelectorAll('[data-bpumf]').forEach(inp => {
+      const evName = inp.tagName === 'SELECT' ? 'change' : 'input';
+      inp.addEventListener(evName, () => {
+        entry.unmeasured = entry.unmeasured || [];
+        const row = entry.unmeasured[+inp.dataset.ri];
+        if (!row) return;
+        row[inp.dataset.bpumf] = inp.value;
+        refreshSoft();
+      });
+    });
+
+    wrap.querySelectorAll('[data-bpumdel]').forEach(el => {
+      el.addEventListener('click', () => {
+        const ri = +(el.dataset.bpumdel.split(':')[1] || 0);
+        entry.unmeasured = entry.unmeasured || [];
+        entry.unmeasured.splice(ri, 1);
+        syncModuleAggregates();
+        renderBPTable();
+        renderPoster();
+      });
+    });
+
+    const addUm = wrap.querySelector('[data-bpumadd]');
+    if (addUm) addUm.addEventListener('click', () => {
+      entry.unmeasured = entry.unmeasured || [];
+      entry.unmeasured.push({ name: '', reason: '' });
+      syncModuleAggregates();
+      renderBPTable();
+      renderPoster();
+    });
+
+    const noteEl = wrap.querySelector('[data-bpnote]');
+    if (noteEl) {
+      noteEl.addEventListener('input', () => {
+        entry.note = noteEl.value;
+        syncModuleAggregates();
+        renderPoster();
+      });
+    }
 
     const impBtn = wrap.querySelector('[data-bpimp]');
     const impInput = wrap.querySelector('[data-bpfile]');
@@ -2327,23 +2537,38 @@ function renderBPTable() {
   renderBPSummary();
 }
 
+// 卡片底部结算条：应测 / 实测 / 正常 / 异常 / 未测，并校验「应测 − 实测 = 未测明细行数」
 function renderBPSummary() {
   const sum = document.getElementById('bpSummary');
   if (!sum) return;
-  const rows = State.bp.details || [];
-  const total = Math.max(bpTotalCount(), rows.length);
-  const abnormal = rows.filter(r => {
+  const expectN = bpExpectCount();
+  const actualN = bpActualCount();
+  const umN = bpUnmeasuredCount();
+  const leaveN = bpLeaveCount();
+  const abnN = (State.bp.details || []).filter(r => {
     const lvl = classifyBP(r.systolic, r.diastolic);
     return lvl && lvl !== '正常';
   }).length;
+  const normalN = Math.max(0, actualN - abnN);
   const dup = findDupNames().length;
-  const projN = (State.bp.entries || []).filter(e =>
-    e.project && (+e.total > 0 || (e.details || []).some(r => r.name || r.systolic || r.diastolic))).length;
+  const gap = expectN - actualN;
+  const mismatch = (expectN > 0 && gap !== umN)
+    ? `<span class="bp-warn" title="应测 − 实测 与未测明细行数对不上">⚠ 未测明细 ${umN} 人，应测−实测 ${gap} 人</span>` : '';
   sum.innerHTML = `
-    <span>共 <b>${total}</b> 人测量${bpHasManualTotal() ? '<span style="color:#9CA3AF;">（手填）</span>' : ''}</span>
-    ${projN > 1 ? `<span>覆盖 <b>${projN}</b> 个项目</span>` : ''}
-    <span>异常 <b style="color:var(--mod-bp);">${abnormal}</b> 人</span>
+    <span>应测 <b>${expectN}</b> 人</span>
+    <span>实测 <b>${actualN}</b> 人</span>
+    <span>正常 <b style="color:var(--success);">${normalN}</b> 人</span>
+    <span>异常 <b style="color:var(--mod-bp);">${abnN}</b> 人</span>
+    <span>未测 <b>${umN}</b> 人${umN ? `（${(() => {
+      const by = {};
+      (State.bp.unmeasured || []).forEach(r => {
+        const k = String(r.reason || '').trim() || '未填原因';
+        by[k] = (by[k] || 0) + 1;
+      });
+      return Object.keys(by).map(k => `${escapeHtml(k)} ${by[k]}`).join('、');
+    })()}）` : ''}</span>
     <span>重名 <b style="color:var(--warning);">${dup}</b> 条</span>
+    ${mismatch}
   `;
 }
 
@@ -2731,26 +2956,44 @@ function buildPosterHtml() {
     }
   }
 
-  // 血压：总人数取手填的「测量总人数」，等级分布仍按明细判级
-  const bpRealTotal = Math.max(bpTotalCount(), bpAll.length);
-  if (bpRealTotal) {
+  // 血压：应测 / 实测分开算，未测（请假、外出等）的人不进「正常」
+  const bpExpectN = bpExpectCount();
+  const bpActualN = bpActualCount();
+  // 其他情况反馈（按项目填写，聚合时已拼成「项目：内容；」），未测人员不再重复罗列姓名
+  const bpOther = String(S.bp.note || '').replace(/\s*\n+\s*/g, ' ').trim();
+  if (bpActualN) {
     const cnt = { 一级预警: 0, 二级预警: 0, 三级预警: 0 };
-    bpAll.forEach(r => { const l = classifyBP(r.systolic, r.diastolic); if (l && cnt[l] !== undefined) cnt[l]++; });
+    bpAll.forEach(r => {
+      const l = classifyBP(r.systolic, r.diastolic);
+      if (!l || cnt[l] === undefined) return;
+      cnt[l]++;
+    });
     const abnN = cnt['一级预警'] + cnt['二级预警'] + cnt['三级预警'];
-    const normalN = Math.max(0, bpRealTotal - abnN);
-    const parts = [];
-    if (normalN) parts.push(`正常 <b>${normalN}</b> 人`);
+    const normalN = Math.max(0, bpActualN - abnN);
+    const parts = [`正常 <b>${normalN}</b> 人`];
+    // 一级 / 二级 / 三级预警：只标人数，分级上色（姓名看明细表）
     ['一级预警', '二级预警', '三级预警'].forEach(l => {
       if (!cnt[l]) return;
-      const num = l === '三级预警' ? `<span class="warn">${cnt[l]}</span>` : `<b>${cnt[l]}</b>`;
-      parts.push(`${l} ${num} 人`);
+      const cls = l === '一级预警' ? 'lv1' : l === '二级预警' ? 'lv2' : 'lv3';
+      parts.push(`<span class="warn ${cls}">${l} ${cnt[l]} 人</span>`);
     });
+    // 未测：请假 / 外出 / 拒测等，这些人已从「正常」里剔除
+    const umN = bpUnmeasuredCount();
+    if (umN) {
+      const byReason = {};
+      (S.bp.unmeasured || []).forEach(r => {
+        const rr = String(r.reason || '').trim() || '未填原因';
+        byReason[rr] = (byReason[rr] || 0) + 1;
+      });
+      const detail = Object.keys(byReason).map(k => `${escapeHtml(k)} ${byReason[k]}`).join('、');
+      parts.push(`未测 <b>${umN}</b> 人${detail ? `（${detail}）` : ''}`);
+    }
     const bpProjN = modProjN((S.bp.entries || []).filter(e =>
-      +e.total > 0 || (e.details || []).some(r => r && (r.name || r.systolic || r.diastolic))));
-    const v = abnN
-      ? `${covPrefix(bpProjN)}测量 <b>${bpRealTotal}</b> 人：${parts.join('，')}${cnt['三级预警'] ? '<span class="warn">（须停止作业）</span>' : ''}`
-      : `${covPrefix(bpProjN)}测量 <b>${bpRealTotal}</b> 人，<span class="ok">均正常</span>`;
-    modRows.push({ k: '血压', v });
+      +e.expect > 0 || +e.actual > 0 || bpEntryRows(e).length || bpEntryUnmeasured(e).length));
+    const v = `${covPrefix(bpProjN)}应测 <b>${bpExpectN}</b> 人，实测 <b>${bpActualN}</b> 人：${parts.join('，')}`;
+    modRows.push({ k: '血压', v: v + (bpOther ? `<div class="bp-extra">其他情况：${escapeHtml(trunc(bpOther, 160))}</div>` : '') });
+  } else if (bpOther) {
+    modRows.push({ k: '血压', v: `其他情况：${escapeHtml(trunc(bpOther, 160))}` });
   }
 
   // 文化检查
@@ -2809,7 +3052,7 @@ function buildPosterHtml() {
               <td>${escapeHtml(trunc(r.name, 10) || '未填姓名')}</td>
               <td>${escapeHtml(r.systolic || '-')}</td>
               <td>${escapeHtml(r.diastolic || '-')}</td>
-              <td class="${lvl === '三级预警' ? 'l3' : ''}">${escapeHtml(lvl)}</td>
+              <td class="${lvl === '一级预警' ? 'l1' : lvl === '二级预警' ? 'l2' : lvl === '三级预警' ? 'l3' : ''}">${escapeHtml(lvl)}</td>
               <td>${advice}</td>
             </tr>`;
           }).join('')}
@@ -2861,7 +3104,7 @@ function buildPosterHtml() {
 
     <div class="p2-sum">
       <div class="lead">${leadText}</div>
-      ${modRows.length ? `<div class="list">${modRows.map(r => `<div class="sum-row"><i class="sdot"></i><span class="k"><span class="kk">${String(r.k).split('').map(c => `<span>${c}</span>`).join('')}</span><em>：</em></span><span class="v">${r.v}</span></div>`).join('')}</div>` : ''}
+      ${modRows.length ? `<div class="list">${modRows.map(r => `<div class="sum-row"><i class="sdot"></i><span class="k"><span class="kk${String(r.k).length <= 2 ? ' kk-s' : ''}">${String(r.k).split('').map(c => `<span>${c}</span>`).join('')}</span><em>：</em></span><span class="v">${r.v}</span></div>`).join('')}</div>` : ''}
     </div>
 
     <div class="p2-sec">
@@ -3828,10 +4071,15 @@ const POSTER_EXPORT_CSS = `
   .p2-sum .sdot{flex:none;width:8px;height:8px;border-radius:50%;background:#007FFF;margin-top:.62em;}
   .p2-sum .k{flex:none;display:inline-flex;align-items:baseline;width:5.2em;color:#007FFF;font-weight:700;white-space:nowrap;}
   .p2-sum .k .kk{flex:1;display:inline-flex;justify-content:space-between;}
+  .p2-sum .k .kk.kk-s{flex:none;justify-content:flex-start;gap:.04em;}
   .p2-sum .k em{font-style:normal;}
   .p2-sum .v{flex:1;min-width:0;}
   .p2-sum .v b{font-weight:700;}
-  .p2-sum .warn{color:#E23D3D;font-weight:700;}
+  .p2-sum .v .bp-extra{margin-top:2px;font-size:15.5px;color:#333;}
+  .p2-sum .warn{color:#B71C1C;font-weight:700;}
+  .p2-sum .warn.lv1{color:#E67E22;}
+  .p2-sum .warn.lv2{color:#F0501E;}
+  .p2-sum .warn.lv3{color:#B71C1C;}
   .p2-sum .ok{color:#16A34A;font-weight:700;}
   .p2-sum .muted{color:#6B7280;}
   .p2-sec{margin-top:26px;}
@@ -3849,7 +4097,9 @@ const POSTER_EXPORT_CSS = `
   table.p2-bp th{background:#EF4444;color:#fff;padding:8px 6px;font-weight:600;font-size:13px;}
   table.p2-bp td{border:1px solid #F1C9C9;padding:7px 6px;text-align:center;color:#000;}
   table.p2-bp tr:nth-child(even) td{background:#FEF7F7;}
-  table.p2-bp td.l3{color:#EF4444;font-weight:700;}
+  table.p2-bp td.l1{color:#E67E22;font-weight:700;}
+  table.p2-bp td.l2{color:#F0501E;font-weight:700;}
+  table.p2-bp td.l3{color:#B71C1C;font-weight:700;}
   .p2-photos{display:flex;gap:22px;align-items:stretch;}
   .p2-photos .grid{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
   .p2-ph{position:relative;height:183px;background:#E8EEF6;border-radius:4px;overflow:hidden;}
@@ -3915,66 +4165,40 @@ function exportHtml() {
   }
 }
 
-/* 导出专用渲染：必须临时取消预览缩放。
-   预览区为适配窗口给 .scale-wrapper 套了 transform:scale(k)。html2canvas 读取文字
-   位置时把这个缩放算进了坐标，绘制却仍按原始字号/行高，于是每个字都落到错误位置，
-   整段文字挤成一坨（字压字）。导出前把缩放还原成 1，导完立刻恢复预览。 */
+/* 导出专用渲染：在屏幕外克隆一份「固定 1160 宽、无缩放」的海报再截图。
+   原因：预览区为了适配窗口给 .scale-wrapper 套了 transform:scale(k)。
+   html2canvas 量文字位置时会把缩放算进坐标，绘制字号却仍是原始大小，
+   于是整段文字挤在缩小的格子里（字压字、表格串行）—— 页面看着正常，导出图是花的。
+   以前是临时把 transform 改回 none，但只要预览面板隐藏/尺寸竞态/旧缓存里没这段代码，
+   就会漏掉。改成克隆后，导出与「网页 100% 显示」的布局完全一致，也不受手机面板隐藏影响。 */
 async function renderPosterCanvas(opts) {
-  const wrap = document.getElementById('scaleWrapper');
   const el = document.getElementById('poster-canvas');
-  const pane = document.getElementById('previewPane');
-  const box = document.getElementById('scaleBox');
-  // 先记录原始状态，再改任何尺寸（否则记到的是导出用的临时值，导完还原不回去）
-  const prevBox = box ? { w: box.style.width, h: box.style.height, o: box.style.overflow } : null;
-  const prev = wrap ? { t: wrap.style.transform, w: wrap.style.width, h: wrap.style.height } : null;
-  // 手机端预览面板默认 display:none，此时海报宽高为 0，直接导出会得到空白图
-  let panePatched = false;
-  if (pane && pane.offsetWidth === 0) {
-    panePatched = true;
-    pane.style.display = 'flex';
-    pane.style.position = 'fixed';
-    pane.style.left = '-20000px';
-    pane.style.top = '0';
-    pane.style.width = '1240px';
-    pane.style.height = 'auto';
-    pane.style.overflow = 'visible';
+  if (!el) throw new Error('找不到海报画布');
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (_) {}
   }
-  if (typeof fitPoster === 'function') fitPoster();
-  // 从这里开始冻结自动重算，直到 finally 恢复
-  posterFitFrozen = true;
-  if (box) {
-    // 导出要完整海报，外层占位盒不能裁、不能限宽
-    box.style.width = 'auto';
-    box.style.height = 'auto';
-    box.style.overflow = 'visible';
-  }
-  if (wrap) {
-    wrap.style.transition = 'none';
-    wrap.style.transform = 'none';
-    wrap.style.width = '1160px';
-    wrap.style.height = 'auto';
-  }
-  // 等两帧，确保布局按未缩放状态重排完成
+  const clone = el.cloneNode(true);
+  // 必须保留 id：海报的宽度/内边距/白底/圆角都挂在 #poster-canvas 上，
+  // 去掉 id 会让内边距丢失，导出图整体左移、右边被裁掉一块。
+  clone.setAttribute('data-export-clone', '1');
+  // 只清编辑态控件，照片的旋转/缩放是 inline style，必须保留
+  clone.querySelectorAll('.ph-tools, .snap-add, .p-ctrl, .block-ctrl, .row-del').forEach(n => n.remove());
+  clone.style.cssText = 'width:1160px;max-width:none;min-width:1160px;margin:0;transform:none;box-shadow:none;border-radius:0;';
+  const holder = document.createElement('div');
+  holder.setAttribute('aria-hidden', 'true');
+  holder.style.cssText = 'position:fixed;left:-20000px;top:0;width:1160px;background:#fff;z-index:-1;pointer-events:none;';
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
+  // 克隆节点有真实尺寸了，按已保存的视角参数重算一遍照片（手机端预览面板隐藏时原节点算不出来）
+  try { if (typeof PosterPhotoState !== 'undefined' && PosterPhotoState.applyAll) PosterPhotoState.applyAll(clone); } catch (_) {}
+  // 等两帧，让克隆节点里的图片/字体完成布局
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   try {
-    return await html2canvas(el, opts);
+    // windowWidth 固定成桌面宽度：否则手机上 html2canvas 会用 390px 宽的窗口克隆文档，
+    // 触发 @media(max-width:768px) 的样式，导出图又跟网页不一致。
+    return await html2canvas(clone, Object.assign({ windowWidth: 1280, windowHeight: 900 }, opts));
   } finally {
-    posterFitFrozen = false;
-    if (wrap && prev) {
-      wrap.style.transform = prev.t;
-      wrap.style.width = prev.w;
-      wrap.style.height = prev.h;
-      requestAnimationFrame(() => { wrap.style.transition = ''; });
-    }
-    if (box && prevBox) {
-      box.style.width = prevBox.w;
-      box.style.height = prevBox.h;
-      box.style.overflow = prevBox.o;
-    }
-    if (panePatched && pane) {
-      pane.removeAttribute('style');
-      if (typeof fitPoster === 'function') fitPoster();
-    }
+    holder.remove();
   }
 }
 
@@ -4096,22 +4320,38 @@ async function exportZip() {
           .map(e => ({ project: e.project || '', objects: e.objects || '', content: e.content || '', count: +e.count || 0, photoCount: e.photos.length }))
       },
       bp: {
-        // v4 起 details 每行带 project；items 按项目分组给出，方便报告工具按项目汇总
+        // details 每行带 project；items 按项目分组给出，方便报告工具按项目汇总
         details: State.bp.details.filter(r => r.name || r.systolic || r.diastolic),
-        total: bpTotalCount(),        // 实测总人数（手填优先，未填项目按明细行数补）
+        expect: bpExpectCount(),      // 应测人数（含请假、外出等未测）
+        actual: bpActualCount(),      // 实测人数
+        total: bpActualCount(),       // 兼容旧字段（报告工具读 total），语义 = 实测
+        unmeasured: bpUnmeasuredCount(),
+        leave: bpLeaveCount(),        // 请假人数合计
+        unmeasuredList: (State.bp.unmeasured || []),  // [{project, name, reason}]
+        note: State.bp.note || '',    // 其他情况反馈
         items: State.bp.entries
-          .filter(e => +e.total > 0 || (e.details || []).some(r => r.name || r.systolic || r.diastolic))
-          .map(e => ({
-            project: e.project || '',
-            total: +e.total || (e.details || []).filter(r => r.name || r.systolic || r.diastolic).length,
-            totalManual: +e.total > 0,
-            details: (e.details || [])
-              .filter(r => r.name || r.systolic || r.diastolic)
-              .map(r => ({
-                name: r.name || '', systolic: r.systolic || '', diastolic: r.diastolic || '',
-                level: classifyBP(r.systolic, r.diastolic)
-              }))
-          })),
+          .filter(e => +e.expect > 0 || +e.actual > 0 || +e.leave > 0 ||
+            bpEntryRows(e).length || bpEntryUnmeasured(e).length)
+          .map(e => {
+            const um = bpEntryUnmeasured(e);
+            return {
+              project: e.project || '',
+              expect: +e.expect || (+e.actual || 0) + um.length,
+              actual: +e.actual || Math.max(0, (+e.expect || 0) - um.length),
+              total: +e.actual || Math.max(0, (+e.expect || 0) - um.length),   // 兼容旧字段
+              totalManual: +e.actual > 0,
+              expectManual: +e.expect > 0,
+              unmeasured: um.map(r => ({ name: String(r.name || '').trim(), reason: String(r.reason || '').trim() })),
+              note: String(e.note || '').replace(/\s*\n+\s*/g, ' ').trim(),
+              leave: um.filter(r => /请假|休假/.test(String(r.reason || ''))).length + (+e.leave || 0),
+              details: (e.details || [])
+                .filter(r => r.name || r.systolic || r.diastolic)
+                .map(r => ({
+                  name: r.name || '', systolic: r.systolic || '', diastolic: r.diastolic || '',
+                  level: classifyBP(r.systolic, r.diastolic)
+                }))
+            };
+          }),
         abnormal: State.bp.details.filter(r => {
           const l = classifyBP(r.systolic, r.diastolic);
           return l && l !== '正常';
@@ -4211,21 +4451,41 @@ async function exportZip() {
 
     // 血压测量 sheet（照片数为模块级，只填首行，避免多行累加）
     const bpDetailRows = State.bp.details.filter(r => r.name || r.systolic || r.diastolic);
-    const bpRows = [['日期', '走场人', '项目', '测量总人数', '姓名', '收缩压', '舒张压', '判级', '照片数']];
-    const bpTotalByProj = {};
+    const bpRows = [['日期', '走场人', '项目', '应测人数', '实测人数', '未测人数', '请假人数', '姓名', '收缩压', '舒张压', '判级', '照片数', '其他情况']];
+    const bpStatByProj = {};
+    const bpNoteByProj = {};
     (State.bp.entries || []).forEach(e => {
       const k = e.project || '';
-      if (!bpTotalByProj[k] && +e.total > 0) bpTotalByProj[k] = +e.total;
+      if (!bpStatByProj[k]) bpStatByProj[k] = { expect: 0, actual: 0, um: 0, leave: 0 };
+      const um = bpEntryUnmeasured(e);
+      bpStatByProj[k].expect += (+e.expect > 0) ? +e.expect
+        : ((+e.actual > 0) ? +e.actual + um.length : bpEntryRows(e).length);
+      bpStatByProj[k].actual += (+e.actual > 0) ? +e.actual
+        : ((+e.expect > 0) ? Math.max(0, +e.expect - um.length) : bpEntryRows(e).length);
+      bpStatByProj[k].um += um.length;
+      bpStatByProj[k].leave += um.filter(r => /请假|休假/.test(String(r.reason || ''))).length + (+e.leave || 0);
+      const nt = String(e.note || '').replace(/\s*\n+\s*/g, ' ').trim();
+      if (nt) bpNoteByProj[k] = bpNoteByProj[k] ? bpNoteByProj[k] + '；' + nt : nt;
     });
     bpDetailRows.forEach((r, i) => {
-      bpRows.push([State.baseDate, walkers.join('、'), r.project || '', bpTotalByProj[r.project || ''] || '',
-        r.name, r.systolic, r.diastolic, classifyBP(r.systolic, r.diastolic), i === 0 ? State.bp.photos.length : '']);
+      const st = bpStatByProj[r.project || ''] || { expect: '', actual: '', um: '', leave: '' };
+      bpRows.push([State.baseDate, walkers.join('、'), r.project || '', st.expect, st.actual, st.um, st.leave,
+        r.name, r.systolic, r.diastolic, classifyBP(r.systolic, r.diastolic), i === 0 ? State.bp.photos.length : '',
+        bpNoteByProj[r.project || ''] || '']);
     });
-    if (!bpDetailRows.length && (State.bp.photos.length || bpTotalCount())) {
-      bpRows.push([State.baseDate, walkers.join('、'), '', bpTotalCount() || '', '', '', '', '',
-        State.bp.photos.length]);
+    if (!bpDetailRows.length && (State.bp.photos.length || bpActualCount())) {
+      bpRows.push([State.baseDate, walkers.join('、'), '', bpExpectCount() || '', bpActualCount() || '',
+        bpUnmeasuredCount(), bpLeaveCount(), '', '', '', '', State.bp.photos.length, State.bp.note || '']);
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bpRows), '血压测量');
+
+    // 血压未测人员 sheet（请假 / 外出 / 拒测等，一人一行）
+    const bpUms = (State.bp.unmeasured || []);
+    if (bpUms.length) {
+      const umRows = [['日期', '走场人', '项目', '姓名', '未测原因']];
+      bpUms.forEach(r => umRows.push([State.baseDate, walkers.join('、'), r.project || '', r.name || '', r.reason || '']));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(umRows), '血压未测人员');
+    }
 
     // 员工心声 sheet（一条一行，按项目区分；照片数为条目级）
     const voiceRows = [['日期', '走场人', '项目', '收集内容', '照片数']];
@@ -4458,6 +4718,7 @@ function bindEvents() {
     renderPoster();
   });
   document.getElementById('btnBPTpl').addEventListener('click', downloadBPTemplate);
+
   const bpGlobalImport = document.getElementById('btnBPImport');
   const bpGlobalFile = document.getElementById('bpFileInput');
   if (bpGlobalImport && bpGlobalFile) {
