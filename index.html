@@ -108,6 +108,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       color: var(--text);
       font-size: 14px; line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      /* 手机浏览器（尤其安卓 Chrome）在超宽容器里会自动放大文字，
+         导致 12px 的说明文字变成巨字。这里锁死，不让它放大。 */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
     button { font-family: inherit; cursor: pointer; }
     input, textarea, select { font-family: inherit; }
@@ -570,11 +574,18 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       z-index: 5;
     }
     .preview-toolbar .info { font-size: 12px; color: var(--text-light); }
+    /* 外层占位：尺寸 = 海报缩放后的视觉尺寸，裁剪只发生在这里，不影响里面的原始 1160 宽海报 */
+    .scale-box {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+    /* 内层只负责缩放：宽高始终是海报原始尺寸，否则 overflow 会按缩小后的盒子把画面裁掉 */
     .scale-wrapper {
       transform-origin: top left;
+      width: 1160px;
       min-width: 0;
       transition: transform 0.15s ease-out;
-      padding-bottom: 40px;
     }
 
     /* ================= 海报本体（1160×1600，白底商务） ================= */
@@ -927,7 +938,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       .app-main { grid-template-columns: minmax(0, 1fr); }
       .form-pane { width: 100%; max-width: 100%; }
       .preview-pane { display: none; }
-      .preview-pane.mobile-show { display: flex; position: fixed; inset: 0; z-index: 100; background: var(--bg-page); }
+      /* 手机上预览浮层是「从无到有」，缩放过渡会让第一帧显示成未缩放的巨大海报，直接禁用 */
+      .scale-wrapper { transition: none !important; }
+      .preview-pane.mobile-show {
+        display: flex; position: fixed; inset: 0; z-index: 100; background: var(--bg-page);
+        padding: calc(50px + env(safe-area-inset-top, 0px)) 10px 24px;   /* 顶部留出「关闭」按钮的位置，并避开刘海 */
+        overflow: auto;
+      }
+      .preview-pane.mobile-show > div { width: 100%; max-width: 100%; min-width: 0; }
+      .preview-pane.mobile-show .preview-toolbar { margin-bottom: 8px; padding: 6px 8px; }
+      .preview-pane.mobile-show .preview-toolbar .info { font-size: 11px; }
+      .preview-pane.mobile-show .preview-toolbar .info:first-child { display: none; }
       /* 手机端：第一行 logo + 标题，第二行按钮横向滑动（不隐藏文字） */
       .app-header { height: auto; flex-wrap: wrap; padding: 8px 12px; gap: 6px; }
       .app-header > div:first-child { gap: 10px; min-width: 0; flex: 1 1 auto; }
@@ -1184,10 +1205,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <div class="info">海报预览（1160×1600，白底商务海报）</div>
         <div class="info" id="posterInfo">— 填写左侧表单，海报实时更新 —</div>
       </div>
-      <div class="scale-wrapper" id="scaleWrapper">
-        <div id="poster-canvas">
-          <!-- 海报内容由 JS 渲染 -->
-          <div style="padding:80px;text-align:center;color:#9CA3AF;">填写左侧表单，海报实时生成</div>
+      <div class="scale-box" id="scaleBox">
+        <div class="scale-wrapper" id="scaleWrapper">
+          <div id="poster-canvas">
+            <!-- 海报内容由 JS 渲染 -->
+            <div style="padding:80px;text-align:center;color:#9CA3AF;">填写左侧表单，海报实时生成</div>
+          </div>
         </div>
       </div>
     </div>
@@ -2458,19 +2481,36 @@ function renderPoster() {
   }
 }
 
+/* 导出时冻结自动重算：导出要临时去掉缩放，若期间 ResizeObserver 又调 fitPoster，
+   缩放会被写回去，html2canvas 就会截到缩小版的图（导出图变成 1/2 大小）。 */
+let posterFitFrozen = false;
+
 function fitPoster() {
+  if (posterFitFrozen) return;
   const wrap = document.getElementById('scaleWrapper');
+  const box = document.getElementById('scaleBox');
   const pane = document.getElementById('previewPane');
   if (!wrap || !pane) return;
   const canvas = document.getElementById('poster-canvas');
   const W = 1160;
-  const avail = pane.clientWidth - 48;
-  const scale = Math.min(1, avail / W);
+  // 面板隐藏时（手机端默认 display:none）clientWidth 为 0，
+  // 旧算法会得到 (0-48)/1160 = 负缩放，把海报翻转成一片看不清的小图。
+  const paneW = pane.clientWidth;
+  if (!paneW || paneW < 120) return;
+  const cs = getComputedStyle(pane);
+  const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const avail = Math.max(160, paneW - pad);
+  const scale = Math.max(0.1, Math.min(1, avail / W));
+  // 内层：始终按海报原始尺寸布局，只做视觉缩放
   wrap.style.transform = `scale(${scale})`;
-  wrap.style.width = (W * scale) + 'px';
-  // 高度按海报实际内容算（新版海报高度不固定）
-  const h = canvas ? canvas.offsetHeight + 40 : 1600;
-  wrap.style.height = (h * scale) + 'px';
+  wrap.style.width = W + 'px';
+  wrap.style.height = 'auto';
+  // 外层：按缩放后的视觉尺寸占位，滚动高度才对
+  if (box) {
+    const h = canvas ? canvas.offsetHeight : 1600;
+    box.style.width = (W * scale) + 'px';
+    box.style.height = ((h + 40) * scale) + 'px';
+  }
 }
 
 /* 海报照片的旋转 / 缩放 / 位移（类似 PPT 的裁剪：旋转后可以拖动照片，调整显示区域）
@@ -3875,11 +3915,106 @@ function exportHtml() {
   }
 }
 
+/* 导出专用渲染：必须临时取消预览缩放。
+   预览区为适配窗口给 .scale-wrapper 套了 transform:scale(k)。html2canvas 读取文字
+   位置时把这个缩放算进了坐标，绘制却仍按原始字号/行高，于是每个字都落到错误位置，
+   整段文字挤成一坨（字压字）。导出前把缩放还原成 1，导完立刻恢复预览。 */
+async function renderPosterCanvas(opts) {
+  const wrap = document.getElementById('scaleWrapper');
+  const el = document.getElementById('poster-canvas');
+  const pane = document.getElementById('previewPane');
+  const box = document.getElementById('scaleBox');
+  // 先记录原始状态，再改任何尺寸（否则记到的是导出用的临时值，导完还原不回去）
+  const prevBox = box ? { w: box.style.width, h: box.style.height, o: box.style.overflow } : null;
+  const prev = wrap ? { t: wrap.style.transform, w: wrap.style.width, h: wrap.style.height } : null;
+  // 手机端预览面板默认 display:none，此时海报宽高为 0，直接导出会得到空白图
+  let panePatched = false;
+  if (pane && pane.offsetWidth === 0) {
+    panePatched = true;
+    pane.style.display = 'flex';
+    pane.style.position = 'fixed';
+    pane.style.left = '-20000px';
+    pane.style.top = '0';
+    pane.style.width = '1240px';
+    pane.style.height = 'auto';
+    pane.style.overflow = 'visible';
+  }
+  if (typeof fitPoster === 'function') fitPoster();
+  // 从这里开始冻结自动重算，直到 finally 恢复
+  posterFitFrozen = true;
+  if (box) {
+    // 导出要完整海报，外层占位盒不能裁、不能限宽
+    box.style.width = 'auto';
+    box.style.height = 'auto';
+    box.style.overflow = 'visible';
+  }
+  if (wrap) {
+    wrap.style.transition = 'none';
+    wrap.style.transform = 'none';
+    wrap.style.width = '1160px';
+    wrap.style.height = 'auto';
+  }
+  // 等两帧，确保布局按未缩放状态重排完成
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try {
+    return await html2canvas(el, opts);
+  } finally {
+    posterFitFrozen = false;
+    if (wrap && prev) {
+      wrap.style.transform = prev.t;
+      wrap.style.width = prev.w;
+      wrap.style.height = prev.h;
+      requestAnimationFrame(() => { wrap.style.transition = ''; });
+    }
+    if (box && prevBox) {
+      box.style.width = prevBox.w;
+      box.style.height = prevBox.h;
+      box.style.overflow = prevBox.o;
+    }
+    if (panePatched && pane) {
+      pane.removeAttribute('style');
+      if (typeof fitPoster === 'function') fitPoster();
+    }
+  }
+}
+
+/* 导出兜底：手机 canvas 有像素上限（iPhone 约 1670 万），海报很长时按 1.5/2 倍会超出，
+   浏览器不报错但返回一张全白图 —— 表现就是「导出的看板图片打不开/是空白」。
+   这里按像素预算自动降倍，并检测全白后降到 1 倍重试。 */
+function canvasLooksBlank(cv) {
+  try {
+    const g = cv.getContext('2d');
+    const w = cv.width, h = cv.height;
+    const pts = [[0.5, 0.05], [0.12, 0.3], [0.5, 0.5], [0.12, 0.85], [0.82, 0.9]];
+    for (const [px, py] of pts) {
+      const x = Math.max(0, Math.min(w - 1, Math.round(w * px)));
+      const y = Math.max(0, Math.min(h - 1, Math.round(h * py)));
+      const d = g.getImageData(x, y, 1, 1).data;
+      if (d[0] < 242 || d[1] < 242 || d[2] < 242) return false;
+    }
+    return true;
+  } catch (_) { return false; }
+}
+
+async function renderPosterSafe(opts) {
+  const el = document.getElementById('poster-canvas');
+  const W = 1160;
+  const H = Math.max(600, el ? el.offsetHeight : 1600);
+  const budget = 12e6;                     // 像素预算，留足 iOS 的安全余量
+  let scale = opts.scale || 2;
+  if (W * H * scale * scale > budget) scale = Math.sqrt(budget / (W * H));
+  scale = Math.round(Math.max(1, Math.min(scale, 2)) * 100) / 100;
+  let cv = await renderPosterCanvas(Object.assign({}, opts, { scale }));
+  if (canvasLooksBlank(cv)) {
+    cv = await renderPosterCanvas(Object.assign({}, opts, { scale: 1 }));
+  }
+  return cv;
+}
+
 async function exportJpg() {
   try {
     toast('🖼 正在生成 JPG...');
-    const el = document.getElementById('poster-canvas');
-    const canvas = await html2canvas(el, {
+    const canvas = await renderPosterSafe({
       backgroundColor: '#ffffff',
       scale: 2,
       useCORS: true,
@@ -4019,8 +4154,7 @@ async function exportZip() {
 
     // 3. 生成海报 PNG
     toast('🎨 正在生成海报...');
-    const posterEl = document.getElementById('poster-canvas');
-    const posterBlob = await html2canvas(posterEl, {
+    const posterBlob = await renderPosterSafe({
       backgroundColor: '#ffffff',
       scale: 1.5,
       useCORS: true,
@@ -4370,21 +4504,34 @@ function bindEvents() {
   document.getElementById('previewToggle').addEventListener('click', () => {
     const pane = document.getElementById('previewPane');
     pane.classList.add('mobile-show');
-    // 插入关闭按钮
-    if (!document.getElementById('previewClose')) {
-      const close = document.createElement('button');
+    // 关闭按钮放进面板内部：面板一隐藏，按钮跟着消失（以前挂在 body 上，关了预览按钮还留在屏幕上）
+    let close = document.getElementById('previewClose');
+    if (!close) {
+      close = document.createElement('button');
       close.id = 'previewClose';
-      close.textContent = '✕ 关闭预览';
-      close.style.cssText = 'position:fixed;top:12px;right:12px;z-index:101;padding:8px 14px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:13px;';
+      close.textContent = '✕ 关闭';
+      close.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:101;padding:7px 12px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:12px;';
       close.addEventListener('click', () => pane.classList.remove('mobile-show'));
-      document.body.appendChild(close);
+      pane.appendChild(close);
     }
+    // 面板刚由 display:none 变成 fixed，必须等布局完成再量宽度，
+    // 否则拿到 0 会算出负缩放（海报翻转成看不清的小图）。
+    fitPoster();
+    requestAnimationFrame(fitPoster);
+    setTimeout(fitPoster, 120);
   });
 
   // 窗口缩放重算海报
   window.addEventListener('resize', () => {
     fitPoster();
   });
+
+  // 面板宽度变化（手机端打开预览浮层）时重算，避免沿用隐藏时的缩放值
+  if (window.ResizeObserver) {
+    try {
+      new ResizeObserver(() => fitPoster()).observe(document.getElementById('previewPane'));
+    } catch (_) {}
+  }
 }
 
 /* ---------- 运行环境提示 ----------
