@@ -1308,7 +1308,13 @@ let CITY_CENTERS = cloneCenterMap(BUILTIN_CITY_CENTERS);
 let DIECHENG_DATA = cloneCenterMap(BUILTIN_DIECHENG_DATA);
 let CENTER_CITY = Object.assign({}, BUILTIN_CENTER_CITY);
 // 城市 → 城市群（来自表格的「城市群」列；没导入表时按老逻辑）
-let GROUP_OF_CITY = { '杭州万净（中心城市）': '万净杭州城市群' };
+// 华东三城（上海 / 宁波 / 杭州）都挂在「万净杭州城市群」下
+const BUILTIN_GROUP_OF_CITY = {
+  '上海万净': '万净杭州城市群',
+  '宁波万净': '万净杭州城市群',
+  '杭州万净（中心城市）': '万净杭州城市群'
+};
+let GROUP_OF_CITY = Object.assign({}, BUILTIN_GROUP_OF_CITY);
 
 // 内置行（没有导入表时用它做「下载当前映射」的数据源）
 function builtinMapRows() {
@@ -1350,10 +1356,12 @@ function applyMapRows(rows) {
     CITY_CENTERS = cloneCenterMap(BUILTIN_CITY_CENTERS);
     DIECHENG_DATA = cloneCenterMap(BUILTIN_DIECHENG_DATA);
     CENTER_CITY = Object.assign({}, BUILTIN_CENTER_CITY);
-    GROUP_OF_CITY = { '杭州万净（中心城市）': '万净杭州城市群' };
+    GROUP_OF_CITY = Object.assign({}, BUILTIN_GROUP_OF_CITY);
     return;
   }
-  const groups = [], cities = [], centers = {}, centerCity = {}, diecheng = {}, groupOfCity = {};
+  const groups = [], cities = [], centers = {}, centerCity = {}, diecheng = {};
+  // 内置映射兜底：表格里「城市群」列为空时，华东三城仍归万净杭州城市群
+  const groupOfCity = Object.assign({}, BUILTIN_GROUP_OF_CITY);
   rows.forEach(r => {
     const g = String((r && r[0]) || '').trim();
     const city = String((r && r[1]) || '').trim();
@@ -3578,6 +3586,7 @@ function renderPlanTable() {
       .concat(CITY_GROUP_OPTIONS.map(g =>
         `<option value="${escapeAttr(g)}"${g === row.cityGroup ? ' selected' : ''}>${escapeHtml(g)}</option>`))
       .join('');
+    // 城市候选 = 该城市群下的城市（杭州群含上海/宁波/杭州三城；群内没配城市时回落全部城市，避免下拉空）
     const cities = citiesOfGroup(row.cityGroup);
     const cityOpts = ['<option value="">— 请选择城市 —</option>']
       .concat(cities.map(c =>
@@ -3629,7 +3638,7 @@ function renderPlanTable() {
   // 项目 chips
   State.plan.items.forEach((row, i) => renderPlanChips(i));
 
-  // 城市群：切换后城市候选跟着变，当前城市不在新群里就清空
+  // 城市群：只改标签，不动城市（城市候选是全部城市，与基础信息一致）
   box.querySelectorAll('select[data-pgf="cityGroup"]').forEach(sel => {
     upgradeSearchSelect(sel);
     refreshSS(sel);
@@ -3638,12 +3647,6 @@ function renderPlanTable() {
       const row = State.plan.items[i];
       if (!row) return;
       row.cityGroup = sel.value;
-      if (row.city && !citiesOfGroup(row.cityGroup).includes(row.city)) {
-        row.city = '';
-        row.dispatchCenter = '';
-        row.projects = [];
-        row.project = '';
-      }
       renderPlanTable();
     });
   });
@@ -3657,9 +3660,9 @@ function renderPlanTable() {
       const row = State.plan.items[i];
       if (!row) return;
       row.city = sel.value;
-      if (row.cityGroup && !citiesOfGroup(row.cityGroup).includes(row.city)) {
-        row.cityGroup = cityGroupFromCity(row.city) || row.cityGroup;
-      }
+      // 城市有对应的城市群时自动跟随（没配映射就保留原来的群，不强行清空）
+      const g = cityGroupFromCity(row.city);
+      if (g) row.cityGroup = g;
       if (row.dispatchCenter && !diechengOfCity(row.city).includes(row.dispatchCenter)) {
         row.dispatchCenter = '';
         row.projects = [];
@@ -4882,7 +4885,15 @@ function bindEvents() {
 
   // 次月走场计划
   document.getElementById('btnPlanAdd').addEventListener('click', () => {
-    State.plan.items.push(emptyPlanRow());
+    // 新行同步上一条计划的城市群 / 城市 / 走场人，连着填同一个人跑多个中心时不用重复选
+    const last = State.plan.items[State.plan.items.length - 1];
+    const row = emptyPlanRow();
+    if (last) {
+      if (last.cityGroup) row.cityGroup = last.cityGroup;
+      if (last.city) row.city = last.city;
+      if (last.walker) row.walker = last.walker;
+    }
+    State.plan.items.push(row);
     renderPlanTable();
   });
   document.getElementById('btnPlanTpl').addEventListener('click', downloadPlanTemplate);
