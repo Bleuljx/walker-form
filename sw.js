@@ -1,7 +1,7 @@
 /* 走场填表工具 - 离线缓存
    策略：主文件 index.html 走「网络优先」（保证更新能到手，断网回退缓存）；
         图标/manifest 走「缓存优先」（体积小、几乎不变）。 */
-var CACHE = 'zcform-v9';
+var CACHE = 'zcform-v11';
 var SHELL = ['./index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {

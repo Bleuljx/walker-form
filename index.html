@@ -1599,6 +1599,8 @@ function normalizeState() {
     if (typeof it.dispatchCenter !== 'string') it.dispatchCenter = '';
     if (typeof it.project !== 'string') it.project = '';
     if (typeof it.walker !== 'string') it.walker = '';
+    if (typeof it.cityGroup !== 'string') it.cityGroup = '';
+    if (typeof it.city !== 'string') it.city = '';
   });
 
   migrateLegacyEntries();
@@ -1881,8 +1883,8 @@ async function clearDraft() {
 
 /* ---------- 一键清除 ----------
    下次填表时不想一条条改：保留「城市 / 城市群 / 走场人」，
-   调度中心、项目清单、各模块条目、风险点、次月计划、照片全部回到空白，日期改成今天。
-   同时删掉已存草稿，避免下次打开又把旧内容载回来。 */
+   调度中心、项目清单、各模块内容、风险点、次月计划、照片全部清空，日期改成今天。
+   每个模块仍留一个空白填写框（不用点「新增」），同时删掉已存草稿。 */
 function freshStateForReset() {
   const today = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -1891,25 +1893,27 @@ function freshStateForReset() {
     walkers: (State.walkers || []).slice(),
     baseDate: todayStr,
     city: State.city || '',
-    scheduleCenter: '',
+    scheduleCenter: '',            // 调度中心每场重选
     cityGroup: State.cityGroup || DEFAULT_CITY_GROUP,
-    projects: [],
-    culture: { entries: [], project: '', followed: true, followers: '', weeklyOk: true, reason: '' },
-    risk: { items: [] },
-    train: { entries: [], objects: '', content: '', count: 0, photos: [] },
-    bp: { entries: [], details: [], leave: 0, photos: [] },
-    voice: { entries: [], lines: [], photos: [] },
-    rest: { entries: [], qualified: true, reason: '', photos: [] },
-    act: { entries: [], enabled: false, theme: '', coverCount: 0, summary: '', photos: [] },
-    plan: { items: [] }
+    projects: [],                  // 项目标签一并清掉，下场重新加
+    // 各模块先塞一条空白记录，清除后直接就能填，不用点「新增」
+    culture: { entries: [blankEntryOf('culture')], project: '', followed: true, followers: '', weeklyOk: true, reason: '' },
+    risk: { items: [blankRiskItem()] },
+    train: { entries: [blankEntryOf('train')], objects: '', content: '', count: 0, photos: [] },
+    bp: { entries: [blankBpEntry()], details: [], leave: 0, photos: [] },
+    voice: { entries: [blankEntryOf('voice')], lines: [], photos: [] },
+    rest: { entries: [blankEntryOf('rest')], qualified: true, reason: '', photos: [] },
+    act: { entries: [blankEntryOf('act')], enabled: false, theme: '', coverCount: 0, summary: '', photos: [] },
+    plan: { items: [] }            // 计划表渲染时自动补一行空白
   };
 }
 
 async function clearAll() {
   const ok = window.confirm(
     '确定要一键清除吗？\n\n' +
-    '会清空：调度中心、项目清单、血压 / 培训 / 员工心声 / 休息室 / 员工活动 / 文化检查、' +
-    '风险点、次月走场计划，以及全部照片。\n\n' +
+    '会清空：调度中心、项目标签、血压 / 培训 / 员工心声 / 休息室 / 员工活动 / 文化检查、' +
+    '风险点、次月走场计划，以及全部照片。\n' +
+    '每个模块会留一个空白填写框，不用再点「新增」。\n\n' +
     '会保留：城市、城市群、走场人；日期改为今天。\n' +
     '已保存的草稿会一并删除，清空后不可撤销。'
   );
@@ -1920,7 +1924,7 @@ async function clearAll() {
   PosterPhotoState.crops = {};         // 照片裁剪/旋转视角也重置，别带到下一场
   await clearDraft();
   renderAll();
-  toast('🧹 已清空，可以填新的一天了');
+  toast('🧹 已清空，各模块留了一个空白框，直接填就行');
 }
 
 /* ---------- 走场人列表 ---------- */
@@ -2180,7 +2184,13 @@ function blankEntryOf(mod) {
   if (mod === 'voice') return { id: uid(), project: '', text: '', photos: [] };
   if (mod === 'rest') return { id: uid(), project: '', qualified: true, reason: '', photos: [] };
   if (mod === 'culture') return { id: uid(), project: '', followed: true, followers: '', weeklyOk: true, reason: '' };
+  if (mod === 'bp') return blankBpEntry();
   return { id: uid(), project: '', theme: '', coverCount: 0, summary: '', photos: [] };
+}
+
+// 风险点空白条目（删光后补位，避免模块只剩「新增」按钮）
+function blankRiskItem() {
+  return { project: '', topic: '', content: '', photos: [] };
 }
 
 // 绑定条目内所有输入 / 删除 / 照片上传
@@ -3290,6 +3300,7 @@ function renderRiskList() {
     wrap.querySelector('[data-rdel]').addEventListener('click', e => {
       const i = +e.target.dataset.rdel;
       State.risk.items.splice(i, 1);
+      if (!State.risk.items.length) State.risk.items.push(blankRiskItem());
       renderRiskList();
       renderPoster();
     });
@@ -3557,7 +3568,22 @@ function renderPlanTable() {
   if (!State.plan.items.length) State.plan.items.push(emptyPlanRow());
 
   box.innerHTML = State.plan.items.map((row, i) => {
-    const centers = Object.keys(DIECHENG_DATA).sort((a, b) => a.localeCompare(b, 'zh'));
+    // 还没填过内容的行，城市群 / 城市自动继承基础信息；已填过的行尊重当前值
+    const untouched = !row.dispatchCenter && !(row.projects || []).length && !row.walker && !row.date;
+    if (untouched) {
+      if (!row.cityGroup && State.cityGroup) row.cityGroup = State.cityGroup;
+      if (!row.city && State.city) row.city = State.city;
+    }
+    const groupOpts = ['<option value="">— 请选择城市群 —</option>']
+      .concat(CITY_GROUP_OPTIONS.map(g =>
+        `<option value="${escapeAttr(g)}"${g === row.cityGroup ? ' selected' : ''}>${escapeHtml(g)}</option>`))
+      .join('');
+    const cities = citiesOfGroup(row.cityGroup);
+    const cityOpts = ['<option value="">— 请选择城市 —</option>']
+      .concat(cities.map(c =>
+        `<option value="${escapeAttr(c)}"${c === row.city ? ' selected' : ''}>${escapeHtml(c)}</option>`))
+      .join('');
+    const centers = row.city ? diechengOfCity(row.city) : Object.keys(DIECHENG_DATA).sort((a, b) => a.localeCompare(b, 'zh'));
     const centerOpts = ['<option value="">— 请选择调度中心 —</option>']
       .concat(centers.map(c =>
         `<option value="${escapeAttr(c)}"${c === row.dispatchCenter ? ' selected' : ''}>${escapeHtml(c)}</option>`))
@@ -3568,6 +3594,16 @@ function renderPlanTable() {
       .join('');
     return `<div class="plan-item" data-pi="${i}">
       <div class="plan-head"><span>计划 ${i + 1}</span><button type="button" class="delx" data-pdel="${i}" title="删除该条">×</button></div>
+      <div class="form-row form-row-2col">
+        <div>
+          <label>城市群</label>
+          <select class="form-input" data-pgf="cityGroup" data-i="${i}">${groupOpts}</select>
+        </div>
+        <div>
+          <label>城市</label>
+          <select class="form-input" data-pcf="city" data-i="${i}">${cityOpts}</select>
+        </div>
+      </div>
       <div class="form-row">
         <label>调度中心</label>
         <select class="form-input" data-pf="dispatchCenter" data-i="${i}">${centerOpts}</select>
@@ -3593,7 +3629,47 @@ function renderPlanTable() {
   // 项目 chips
   State.plan.items.forEach((row, i) => renderPlanChips(i));
 
-  // 调度中心：可搜索下拉，选中后重建该行项目候选
+  // 城市群：切换后城市候选跟着变，当前城市不在新群里就清空
+  box.querySelectorAll('select[data-pgf="cityGroup"]').forEach(sel => {
+    upgradeSearchSelect(sel);
+    refreshSS(sel);
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.i;
+      const row = State.plan.items[i];
+      if (!row) return;
+      row.cityGroup = sel.value;
+      if (row.city && !citiesOfGroup(row.cityGroup).includes(row.city)) {
+        row.city = '';
+        row.dispatchCenter = '';
+        row.projects = [];
+        row.project = '';
+      }
+      renderPlanTable();
+    });
+  });
+
+  // 城市：切换后调度中心候选跟着变，当前中心不属于新城市就清空（项目随之清）
+  box.querySelectorAll('select[data-pcf="city"]').forEach(sel => {
+    upgradeSearchSelect(sel);
+    refreshSS(sel);
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.i;
+      const row = State.plan.items[i];
+      if (!row) return;
+      row.city = sel.value;
+      if (row.cityGroup && !citiesOfGroup(row.cityGroup).includes(row.city)) {
+        row.cityGroup = cityGroupFromCity(row.city) || row.cityGroup;
+      }
+      if (row.dispatchCenter && !diechengOfCity(row.city).includes(row.dispatchCenter)) {
+        row.dispatchCenter = '';
+        row.projects = [];
+        row.project = '';
+      }
+      renderPlanTable();
+    });
+  });
+
+  // 调度中心：可搜索下拉，选中后重建该行项目候选；城市为空时顺带补上所属城市
   box.querySelectorAll('select[data-pf="dispatchCenter"]').forEach(sel => {
     upgradeSearchSelect(sel);
     refreshSS(sel);
@@ -3602,6 +3678,10 @@ function renderPlanTable() {
       const row = State.plan.items[i];
       if (!row) return;
       row.dispatchCenter = sel.value;
+      if (sel.value && !row.city) {
+        const c = cityFromDiecheng(sel.value);
+        if (c) { row.city = c; if (!row.cityGroup) row.cityGroup = cityGroupFromCity(c) || ''; }
+      }
       const allow = planProjectList(row.dispatchCenter, null);
       row.projects = (row.projects || []).filter(p => allow.includes(p));
       row.project = row.projects[0] || '';
@@ -3680,7 +3760,15 @@ function renderPlanChips(i) {
 }
 
 function emptyPlanRow() {
-  return { project: '', projects: [], dispatchCenter: '', walker: '', date: '' };
+  // 城市群 / 城市默认带出基础信息的值，下一场不用重选
+  return { cityGroup: State.cityGroup || '', city: State.city || '', project: '', projects: [], dispatchCenter: '', walker: '', date: '' };
+}
+
+// 某城市群下的城市（映射表里没有对应关系时退回全部城市，避免下拉空掉）
+function citiesOfGroup(group) {
+  if (!group) return CITY_OPTIONS.slice();
+  const hit = CITY_OPTIONS.filter(c => (GROUP_OF_CITY[c] || '') === group);
+  return hit.length ? hit : CITY_OPTIONS.slice();
 }
 
 // 导出用的「次月走场计划」数据（与「次月走场计划模板.xlsx」同结构：
@@ -3689,10 +3777,12 @@ function buildPlanExportRows() {
   const rows = [['城市群', '城市', '调度中心', '项目', '走场时间', '走场人']];
   State.plan.items.filter(p => p.project || p.dispatchCenter).forEach(p => {
     const list = (Array.isArray(p.projects) && p.projects.length) ? p.projects : [p.project || ''];
+    const group = p.cityGroup || State.cityGroup || '';
+    const city = p.city ? cityPlain(p.city) : cityFromCenter(p.dispatchCenter);
     list.forEach(proj => {
       rows.push([
-        State.cityGroup || '',
-        cityFromCenter(p.dispatchCenter),
+        group,
+        city,
         p.dispatchCenter,
         proj,
         p.date,
@@ -3815,7 +3905,7 @@ function downloadPlanTemplate() {
   const desc = XLSX.utils.aoa_to_sheet([
     ['字段填写说明'],
     ['城市群', '固定 8 个：万净深圳/广州/苏州/天津/沈阳/武汉/成都/杭州城市群'],
-    ['城市', '按调度中心所属城市自动带出（杭州 / 宁波 / 上海）'],
+    ['城市', '如 杭州 / 宁波 / 上海；留空时按调度中心所属城市自动推导'],
     ['调度中心', '填具体调度中心名称'],
     ['项目', '填具体项目名'],
     ['走场时间', '格式 YYYY-MM-DD'],
@@ -3874,7 +3964,14 @@ function importPlanFromExcel(file) {
         const proj = String(r[iProj] == null ? '' : r[iProj]).trim();
         if (!center && !proj) continue;
         if (/^示例/.test(center) || /^示例/.test(proj)) continue;
+        // 城市群 / 城市按行读取；缺失的行由空串兜底，导出时会回落到基础信息
+        let g = iGroup >= 0 ? String(r[iGroup] == null ? '' : r[iGroup]).trim() : '';
+        if (g) g = /^万净/.test(g) ? g : (/城市群$/.test(g) ? '万净' + g : g);
+        let c = iCity >= 0 ? String(r[iCity] == null ? '' : r[iCity]).trim() : '';
+        if (c) c = CITY_OPTIONS.find(x => cityPlain(x) === cityPlain(c)) || c;
         items.push({
+          cityGroup: g,
+          city: c,
           dispatchCenter: center,
           project: proj,
           projects: proj ? [proj] : [],
@@ -4430,6 +4527,8 @@ async function exportZip() {
       },
       nextMonthPlan: State.plan.items.filter(p => (p.projects || []).length || p.project || p.dispatchCenter)
         .map(p => ({
+          cityGroup: p.cityGroup || State.cityGroup || '',
+          city: p.city ? cityPlain(p.city) : cityFromCenter(p.dispatchCenter),
           dispatchCenter: p.dispatchCenter || '',
           projects: (Array.isArray(p.projects) && p.projects.length) ? p.projects : (p.project ? [p.project] : []),
           project: (Array.isArray(p.projects) && p.projects.length) ? p.projects.join('、') : (p.project || ''),
