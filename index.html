@@ -160,6 +160,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .btn-ghost {
       background: transparent; border-color: transparent;
     }
+    /* 一键清除：低饱和红，平时不抢眼，悬停才亮 */
+    .btn-clear { color: #B03A2E; border-color: #E8C4BE; background: #FFF7F5; }
+    .btn-clear:hover { color: #fff; background: #C0392B; border-color: #C0392B; }
 
     /* ================= 主布局 ================= */
     /* 普通文档流：页面整体自然滚动，不做固定视口 app-shell（避免父级高度塌陷导致滑不动） */
@@ -1062,6 +1065,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <div class="actions">
     <button class="btn" id="btnLoadDraft"><span class="full">载入草稿</span></button>
     <button class="btn" id="btnSaveDraft"><span class="full">保存草稿</span></button>
+    <button class="btn btn-clear" id="btnClearAll" title="清空全部填写内容，保留城市 / 城市群 / 走场人"><span class="full">🧹 一键清除</span></button>
     <button class="btn" id="btnExportHtml"><span class="full">🌐 导出 HTML</span></button>
     <button class="btn" id="btnExportJpg"><span class="full">🖼 导出 JPG</span></button>
     <button class="btn btn-primary" id="btnExport"><span class="full">📦 导出走场包</span></button>
@@ -1873,6 +1877,50 @@ async function loadDraft() {
 async function clearDraft() {
   try { await idbDel(STORAGE_KEY); } catch (_) {}
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+/* ---------- 一键清除 ----------
+   下次填表时不想一条条改：保留「城市 / 城市群 / 走场人」，
+   调度中心、项目清单、各模块条目、风险点、次月计划、照片全部回到空白，日期改成今天。
+   同时删掉已存草稿，避免下次打开又把旧内容载回来。 */
+function freshStateForReset() {
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  return {
+    walkers: (State.walkers || []).slice(),
+    baseDate: todayStr,
+    city: State.city || '',
+    scheduleCenter: '',
+    cityGroup: State.cityGroup || DEFAULT_CITY_GROUP,
+    projects: [],
+    culture: { entries: [], project: '', followed: true, followers: '', weeklyOk: true, reason: '' },
+    risk: { items: [] },
+    train: { entries: [], objects: '', content: '', count: 0, photos: [] },
+    bp: { entries: [], details: [], leave: 0, photos: [] },
+    voice: { entries: [], lines: [], photos: [] },
+    rest: { entries: [], qualified: true, reason: '', photos: [] },
+    act: { entries: [], enabled: false, theme: '', coverCount: 0, summary: '', photos: [] },
+    plan: { items: [] }
+  };
+}
+
+async function clearAll() {
+  const ok = window.confirm(
+    '确定要一键清除吗？\n\n' +
+    '会清空：调度中心、项目清单、血压 / 培训 / 员工心声 / 休息室 / 员工活动 / 文化检查、' +
+    '风险点、次月走场计划，以及全部照片。\n\n' +
+    '会保留：城市、城市群、走场人；日期改为今天。\n' +
+    '已保存的草稿会一并删除，清空后不可撤销。'
+  );
+  if (!ok) return;
+  const fresh = freshStateForReset();
+  Object.keys(State).forEach(k => { delete State[k]; });
+  Object.assign(State, fresh);
+  PosterPhotoState.crops = {};         // 照片裁剪/旋转视角也重置，别带到下一场
+  await clearDraft();
+  renderAll();
+  toast('🧹 已清空，可以填新的一天了');
 }
 
 /* ---------- 走场人列表 ---------- */
@@ -4604,6 +4652,7 @@ function bindEvents() {
   // 顶部按钮
   document.getElementById('btnSaveDraft').addEventListener('click', () => saveDraft());
   document.getElementById('btnLoadDraft').addEventListener('click', loadDraft);
+  document.getElementById('btnClearAll').addEventListener('click', () => { clearAll(); });
   document.getElementById('btnExport').addEventListener('click', exportZip);
 
   // 基础信息
