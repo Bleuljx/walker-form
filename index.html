@@ -1220,17 +1220,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </section>
 
-    <!-- 卡片 8：次月走场计划 -->
+    <!-- 卡片 8：次月走场计划（开关控制，打开后显示 4 条待填计划） -->
     <section class="card" data-card="plan">
       <div class="card-header">
         <span><span class="badge"></span>⑧ 次月走场计划</span>
         <span class="card-tools">
           <button class="btn" id="btnPlanTpl" style="font-size:11px;padding:3px 8px;">📄 模板下载</button>
           <button class="btn" id="btnPlanImport" style="font-size:11px;padding:3px 8px;">📥 导入模板</button>
+          <label class="switch" title="需要填写次月计划时打开">
+            <input type="checkbox" id="planEnabled" />
+            <span class="slider"></span>
+          </label>
           <input type="file" id="planFileInput" accept=".xlsx,.xls,.csv" style="display:none" />
         </span>
       </div>
-      <div class="card-body">
+      <div class="card-body" id="planBody" style="display:none;">
         <div id="planList" class="plan-list"></div>
         <div class="bp-actions">
           <button class="btn" id="btnPlanAdd" style="font-size:11px;padding:3px 8px;">+ 添加计划</button>
@@ -1507,7 +1511,8 @@ const State = {
     photos: []
   },
   plan: {
-    items: [] // [{project, dispatchCenter, diecheng, walker, date, completed}]
+    enabled: false,  // 开关：需要填次月计划时打开，展开 4 条待填行
+    items: []        // [{cityGroup, city, project, projects[], dispatchCenter, walker, date}]
   }
 };
 
@@ -1601,6 +1606,11 @@ function normalizeState() {
   if (!Array.isArray(State.act.entries)) State.act.entries = [];
   if (!State.plan || typeof State.plan !== 'object') State.plan = { items: [] };
   if (!Array.isArray(State.plan.items)) State.plan.items = [];
+  // 老草稿没有 enabled 字段：只有真的填过计划（中心/项目/日期）才视为打开，
+  // 避免空行被当成「填过」导致下次打开工具计划区自动展开
+  if (typeof State.plan.enabled !== 'boolean') {
+    State.plan.enabled = State.plan.items.some(it => it && (it.dispatchCenter || (it.projects && it.projects.length) || it.date));
+  }
   State.plan.items.forEach(it => {
     if (!it || typeof it !== 'object') return;
     if (!Array.isArray(it.projects)) it.projects = it.project ? [it.project] : [];
@@ -1897,6 +1907,19 @@ function freshStateForReset() {
   const today = new Date();
   const pad = n => String(n).padStart(2, '0');
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  // 次月计划：开关收起，但保留上次每行的城市群 / 城市 / 走场人，下次点开直接接着填
+  const prevPlan = (State.plan && Array.isArray(State.plan.items)) ? State.plan.items : [];
+  const planRows = [];
+  for (let i = 0; i < PLAN_ROWS; i++) {
+    const src = prevPlan[i] || {};
+    planRows.push({
+      cityGroup: src.cityGroup || State.cityGroup || DEFAULT_CITY_GROUP,
+      city: src.city || State.city || '',
+      project: '', projects: [], dispatchCenter: '',
+      walker: src.walker || '',
+      date: '',
+    });
+  }
   return {
     walkers: (State.walkers || []).slice(),
     baseDate: todayStr,
@@ -1912,7 +1935,7 @@ function freshStateForReset() {
     voice: { entries: [blankEntryOf('voice')], lines: [], photos: [] },
     rest: { entries: [blankEntryOf('rest')], qualified: true, reason: '', photos: [] },
     act: { entries: [blankEntryOf('act')], enabled: false, theme: '', coverCount: 0, summary: '', photos: [] },
-    plan: { items: [] }            // 计划表渲染时自动补一行空白
+    plan: { enabled: false, items: planRows }   // 收起，但保留上次的城市群 / 城市 / 走场人
   };
 }
 
@@ -1920,9 +1943,9 @@ async function clearAll() {
   const ok = window.confirm(
     '确定要一键清除吗？\n\n' +
     '会清空：调度中心、项目标签、血压 / 培训 / 员工心声 / 休息室 / 员工活动 / 文化检查、' +
-    '风险点、次月走场计划，以及全部照片。\n' +
+    '风险点、次月走场计划的调度中心 / 项目 / 日期，以及全部照片。\n' +
     '每个模块会留一个空白填写框，不用再点「新增」。\n\n' +
-    '会保留：城市、城市群、走场人；日期改为今天。\n' +
+    '会保留：城市、城市群、走场人；次月计划保留上次的城市群 / 城市 / 走场人（收起状态，需要时点开关展开）；日期改为今天。\n' +
     '已保存的草稿会一并删除，清空后不可撤销。'
   );
   if (!ok) return;
@@ -3569,12 +3592,24 @@ function renderAll() {
   // 照片
   if (window._bpUploader) window._bpUploader.renderThumbs();
 
-  // 次月走场计划
+  // 次月走场计划（开关控制显示，关闭时只隐藏不清数据）
+  syncPlanSwitch();
   renderPlanTable();
 }
 
 
 /* ---------- 次月走场计划 ---------- */
+// 打开开关时默认展开的计划行数；已有内容不足此数时补齐，超出不截断
+const PLAN_ROWS = 4;
+
+function syncPlanSwitch() {
+  const cb = document.getElementById('planEnabled');
+  const body = document.getElementById('planBody');
+  if (!cb || !body) return;
+  cb.checked = !!State.plan.enabled;
+  body.style.display = State.plan.enabled ? 'block' : 'none';
+}
+
 function renderPlanTable() {
   const box = document.getElementById('planList');
   if (!box) return;
@@ -3994,6 +4029,7 @@ function importPlanFromExcel(file) {
       if (!items.length) { toast('⚠️ 没有读到有效数据'); return; }
 
       State.plan.items = items;
+      State.plan.enabled = true;   // 导入后自动展开，直接看到导入的计划
 
       // 表格里带了城市群 / 城市就顺带补齐基础信息，避免导出的计划跟海报对不上
       if (iGroup >= 0) {
@@ -4010,6 +4046,7 @@ function importPlanFromExcel(file) {
       }
 
       renderPlanTable();
+      syncPlanSwitch();
       renderPoster();
       toast(`✅ 已导入 ${items.length} 条计划`);
     } catch (err) {
@@ -4893,6 +4930,15 @@ function bindEvents() {
   });
 
   // 次月走场计划
+  // 开关：打开时不足 4 条补空行（已有内容保留），关闭只隐藏不清数据
+  document.getElementById('planEnabled').addEventListener('change', e => {
+    State.plan.enabled = e.target.checked;
+    if (State.plan.enabled) {
+      while (State.plan.items.length < PLAN_ROWS) State.plan.items.push(emptyPlanRow());
+      renderPlanTable();
+    }
+    syncPlanSwitch();
+  });
   document.getElementById('btnPlanAdd').addEventListener('click', () => {
     // 新行同步上一条计划的城市群 / 城市 / 走场人，连着填同一个人跑多个中心时不用重复选
     const last = State.plan.items[State.plan.items.length - 1];
