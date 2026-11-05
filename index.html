@@ -882,7 +882,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     /* 血压未测人员明细（挂在血压预警下面，蓝色系与红色预警表区分） */
     .p2-um { margin: 14px 0 0 24px; }
     .p2-um-h { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 7px; }
-    .p2-um-h span { font-size: 13.5px; font-weight: 400; color: #6B7280; }
+    .p2-um-h span { font-size: 13.5px; font-weight: 400; color: #C00000; }
     table.p2-bp.p2-bp-um th { background: #E8F1FB; color: #0B62C4; border: 1px solid #CFE3F8; }
     table.p2-bp.p2-bp-um td { border: 1px solid #DCE9F7; padding: 6px 8px; }
     table.p2-bp.p2-bp-um tr:nth-child(even) td { background: #F7FBFF; }
@@ -2969,11 +2969,16 @@ function buildPosterHtml() {
   const restRows = (S.rest.entries || []).filter(e => e && (e.project || e.qualified === false || (e.reason || '').trim()));
   if (restRows.length) {
     const badRest = restRows.filter(e => e.qualified === false);
-    const reasons = badRest.map(e => (e.reason || '').trim()).filter(Boolean);
+    // 不合格逐条写「项目名休息室+问题」，多个用分号隔开
+    const reasons = badRest.map(e => {
+      const rsn = (e.reason || '').trim().replace(/^休息室/, '');
+      const proj = (e.project || '').trim();
+      return proj ? proj + '休息室' + (rsn || '检查不合格') : (rsn || '检查不合格');
+    }).filter(Boolean);
     modRows.push({
       k: '休息室',
       v: `${covPrefix(modProjN(restRows))}检查 <b>${restRows.length}</b> 处，合格 <b>${restRows.length - badRest.length}</b> 处` +
-        (badRest.length ? `，<span class="warn">不合格 ${badRest.length} 处${reasons.length ? `（${escapeHtml(trunc(reasons.join('；'), 30))}）` : ''}</span>` : '')
+        (badRest.length ? `，<span class="warn">不合格 ${badRest.length} 处${reasons.length ? `（${escapeHtml(trunc(reasons.join('；'), 60))}）` : ''}</span>` : '')
     });
   }
 
@@ -3951,7 +3956,8 @@ function importPlanFromExcel(file) {
       const iWalker = find('走场人');
       const iDate = find('走场时间', '日期');
       const iGroup = find('城市群');
-      const iCity = find('城市');
+      // 注意：find('城市') 会先命中「城市群」列，城市列必须排除含「群」的表头
+      const iCity = header.findIndex(h => h.indexOf('城市') > -1 && h.indexOf('城市群') < 0);
       if (iCenter < 0 && iProj < 0) {
         toast('⚠️ 无法识别列名（需含 调度中心 / 项目 / 走场时间 / 走场人）');
         return;
@@ -3971,7 +3977,10 @@ function importPlanFromExcel(file) {
         let g = iGroup >= 0 ? String(r[iGroup] == null ? '' : r[iGroup]).trim() : '';
         if (g) g = /^万净/.test(g) ? g : (/城市群$/.test(g) ? '万净' + g : g);
         let c = iCity >= 0 ? String(r[iCity] == null ? '' : r[iCity]).trim() : '';
-        if (c) c = CITY_OPTIONS.find(x => cityPlain(x) === cityPlain(c)) || c;
+        // 规范成下拉里的完整城市名（模板写「杭州」→「杭州万净（中心城市）」），否则计划行下拉匹配不上会显示空白
+        if (c) c = cityFull(c);
+        // 城市群缺失时按城市反推，避免城市群为空导致城市下拉没有候选项
+        if (!g && c) g = cityGroupFromCity(c);
         items.push({
           cityGroup: g,
           city: c,
@@ -3996,8 +4005,8 @@ function importPlanFromExcel(file) {
       }
       if (iCity >= 0 && !State.city) {
         const c0 = rows.slice(1).map(r => String((r || [])[iCity] == null ? '' : r[iCity]).trim()).find(Boolean);
-        const hit = CITY_OPTIONS.find(x => cityPlain(x) === cityPlain(c0));
-        if (hit) { State.city = hit; renderCitySelect(); renderDiechengSelect(); }
+        const hit = cityFull(c0);
+        if (hit && CITY_OPTIONS.indexOf(hit) > -1) { State.city = hit; renderCitySelect(); renderDiechengSelect(); }
       }
 
       renderPlanTable();
@@ -4225,7 +4234,7 @@ const POSTER_EXPORT_CSS = `
   .p2-risk .rc{font-size:17px;line-height:1.7;color:#000;padding-left:24px;}
   .p2-um{margin:14px 0 0 24px;}
   .p2-um-h{font-size:16px;font-weight:700;color:#111;margin-bottom:7px;}
-  .p2-um-h span{font-size:13.5px;font-weight:400;color:#6B7280;}
+  .p2-um-h span{font-size:13.5px;font-weight:400;color:#C00000;}
   table.p2-bp.p2-bp-um th{background:#E8F1FB;color:#0B62C4;border:1px solid #CFE3F8;}
   table.p2-bp.p2-bp-um td{border:1px solid #DCE9F7;padding:6px 8px;}
   table.p2-bp.p2-bp-um tr:nth-child(even) td{background:#F7FBFF;}
