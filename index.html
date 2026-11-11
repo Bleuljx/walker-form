@@ -839,24 +839,28 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       margin-top: 20px; background: #F4F8FF; border-left: 5px solid var(--primary);
       border-radius: 6px; padding: 16px 20px 14px;
     }
-    .p2-sum .lead { font-size: 17px; line-height: 1.8; color: #000; margin-bottom: 4px; }
+    .p2-sum .lead { font-size: 17px; line-height: 31px; color: #000; margin-bottom: 4px; }
     .p2-sum .lead b { color: var(--primary); font-weight: 800; }
     .p2-sum .list { margin-top: 2px; }
     .p2-sum .sum-row {
       display: flex; align-items: flex-start; gap: 8px;
-      padding: 5px 0; font-size: 16.5px; line-height: 1.75; color: #000;
+      padding: 5px 0; font-size: 16.5px; line-height: 29px; color: #000;
     }
     .p2-sum .sdot {
       flex: none; width: 8px; height: 8px; border-radius: 50%;
-      background: var(--primary); margin-top: .62em;
+      background: var(--primary); margin-top: 11px;
     }
     .p2-sum .k {
-      flex: none; display: inline-flex; align-items: baseline; width: 5.2em;
+      flex: 0 0 5.2em; width: 5.2em; display: inline-flex; align-items: baseline; height: 29px;
       color: var(--primary); font-weight: 700; white-space: nowrap;
     }
     .p2-sum .k .kk { flex: 1; display: inline-flex; justify-content: space-between; }
-    .p2-sum .k em { font-style: normal; }
-    .p2-sum .v { flex: 1; min-width: 0; }
+    .p2-sum .k .kk span { display: block; line-height: 29px; }
+    .p2-sum .k em { font-style: normal; line-height: 29px; }
+    .p2-sum .v {
+      display: block; flex: 1 1 0; min-width: 0;
+      line-height: 29px; overflow-wrap: anywhere; word-break: break-word;
+    }
     .p2-sum .v b { font-weight: 700; }
     .p2-sum .warn { color: #B71C1C; font-weight: 700; }
     /* 血压分级：一级橙 / 二级橙红 / 三级深红，只标人数不写名字 */
@@ -1220,10 +1224,27 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </section>
 
-    <!-- 卡片 8：次月走场计划（开关控制，打开后显示 4 条待填计划） -->
+    <!-- 卡片 8：其他（开关控制，可多条，每条含主题 / 内容 / 照片） -->
+    <section class="card" data-card="other">
+      <div class="card-header">
+        <span><span class="badge"></span>⑧ 其他</span>
+        <div class="switch-row" style="padding:0;">
+          <label class="switch" title="有额外事项需要记录时打开">
+            <input type="checkbox" id="otherEnabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="otherBody" style="display:none;">
+        <div id="otherEntries"></div>
+        <button type="button" class="add-entry" id="btnOtherAdd">＋ 新增其他事项</button>
+      </div>
+    </section>
+
+    <!-- 卡片 9：次月走场计划（开关控制，打开后显示 4 条待填计划） -->
     <section class="card" data-card="plan">
       <div class="card-header">
-        <span><span class="badge"></span>⑧ 次月走场计划</span>
+        <span><span class="badge"></span>⑨ 次月走场计划</span>
         <span class="card-tools">
           <button class="btn" id="btnPlanTpl" style="font-size:11px;padding:3px 8px;">📄 模板下载</button>
           <button class="btn" id="btnPlanImport" style="font-size:11px;padding:3px 8px;">📥 导入模板</button>
@@ -1513,6 +1534,11 @@ const State = {
   plan: {
     enabled: false,  // 开关：需要填次月计划时打开，展开 4 条待填行
     items: []        // [{cityGroup, city, project, projects[], dispatchCenter, walker, date}]
+  },
+  other: {           // 其他事项（可多条，每条含主题 / 内容 / 照片）
+    entries: [],     // [{id, project, theme, content, photos:[]}]
+    enabled: false,  // 开关：默认收起
+    photos: []       // 由 entries 聚合，仅供照片反馈 / 导出读取
   }
 };
 
@@ -1604,6 +1630,13 @@ function normalizeState() {
   if (!State.act || typeof State.act !== 'object') State.act = {};
   if (!Array.isArray(State.act.photos)) State.act.photos = [];
   if (!Array.isArray(State.act.entries)) State.act.entries = [];
+  if (!State.other || typeof State.other !== 'object') State.other = {};
+  if (!Array.isArray(State.other.entries)) State.other.entries = [];
+  if (!Array.isArray(State.other.photos)) State.other.photos = [];
+  // 老草稿没有 enabled 字段：真的填过其他事项才视为打开，空行不算
+  if (typeof State.other.enabled !== 'boolean') {
+    State.other.enabled = State.other.entries.some(e => e && ((e.theme || '').trim() || (e.content || '').trim() || (e.photos || []).length));
+  }
   if (!State.plan || typeof State.plan !== 'object') State.plan = { items: [] };
   if (!Array.isArray(State.plan.items)) State.plan.items = [];
   // 老草稿没有 enabled 字段：只有真的填过计划（中心/项目/日期）才视为打开，
@@ -1723,6 +1756,7 @@ function migrateLegacyEntries() {
   norm(S.voice.entries, ['text']);
   norm(S.rest.entries, ['reason']);
   norm(S.act.entries, ['theme', 'coverCount', 'summary']);
+  norm(S.other.entries, ['theme', 'content']);
   S.rest.entries.forEach(e => { if (typeof e.qualified !== 'boolean') e.qualified = true; });
   S.act.entries.forEach(e => { if (typeof e.coverCount !== 'number') e.coverCount = +e.coverCount || 0; });
   S.culture.entries.forEach(e => {
@@ -1758,6 +1792,8 @@ function syncModuleAggregates() {
   S.act.coverCount = S.act.entries.reduce((a, e) => a + (+e.coverCount || 0), 0);
   S.act.summary = S.act.entries.map(e => (e.summary || '').trim()).filter(Boolean).join('；');
   S.act.photos = S.act.entries.reduce((a, e) => a.concat(e.photos || []), []);
+
+  S.other.photos = S.other.entries.reduce((a, e) => a.concat(e.photos || []), []);
 
   // 血压：entries → 扁平 details（每行带 project），海报汇总 / 导出 / 报告工具都读它
   S.bp.details = (S.bp.entries || []).reduce((a, e) => a.concat(
@@ -1935,6 +1971,7 @@ function freshStateForReset() {
     voice: { entries: [blankEntryOf('voice')], lines: [], photos: [] },
     rest: { entries: [blankEntryOf('rest')], qualified: true, reason: '', photos: [] },
     act: { entries: [blankEntryOf('act')], enabled: false, theme: '', coverCount: 0, summary: '', photos: [] },
+    other: { entries: [blankEntryOf('other')], enabled: false, photos: [] },
     plan: { enabled: false, items: planRows }   // 收起，但保留上次的城市群 / 城市 / 走场人
   };
 }
@@ -1943,7 +1980,7 @@ async function clearAll() {
   const ok = window.confirm(
     '确定要一键清除吗？\n\n' +
     '会清空：调度中心、项目标签、血压 / 培训 / 员工心声 / 休息室 / 员工活动 / 文化检查、' +
-    '风险点、次月走场计划的调度中心 / 项目 / 日期，以及全部照片。\n' +
+    '风险点、其他、次月走场计划的调度中心 / 项目 / 日期，以及全部照片。\n' +
     '每个模块会留一个空白填写框，不用再点「新增」。\n\n' +
     '会保留：城市、城市群、走场人；次月计划保留上次的城市群 / 城市 / 走场人（收起状态，需要时点开关展开）；日期改为今天。\n' +
     '已保存的草稿会一并删除，清空后不可撤销。'
@@ -2095,7 +2132,7 @@ function renderProjectPick() {
 
 /* ---------- 模块条目：培训 / 员工心声 / 休息室检查 / 员工活动 ---------- */
 // 每条记录都带「所属项目」，一天走多个项目时各填各的
-const MODULE_TITLE = { train: '培训', voice: '员工心声', rest: '休息室检查', act: '员工活动', culture: '文化检查', bp: '血压预警' };
+const MODULE_TITLE = { train: '培训', voice: '员工心声', rest: '休息室检查', act: '员工活动', culture: '文化检查', bp: '血压预警', other: '其他' };
 
 function entryTitle(mod, idx, entry) {
   return `${MODULE_TITLE[mod]} ${idx + 1}${entry.project ? ' · ' + entry.project : ''}`;
@@ -2184,6 +2221,22 @@ function renderActEntries() {
   bindEntryCards('act', State.act.entries, renderActEntries, box);
 }
 
+function renderOtherEntries() {
+  const box = document.getElementById('otherEntries');
+  if (!box) return;
+  // 开关打开后至少留一条空白，删光也能继续填
+  if (!State.other.entries.length) State.other.entries.push(blankEntryOf('other'));
+  box.innerHTML = State.other.entries.map((e, i) => entryShell('other', e, i, `
+    <div class="form-row"><label>所属项目</label>${projectSelectHtml(e)}</div>
+    <div class="form-row"><label>主题</label>
+      <input type="text" class="form-input" data-field="theme" value="${escapeAttr(e.theme)}" placeholder="如：消防通道占用整改" /></div>
+    <div class="form-row"><label>内容</label>
+      <textarea class="form-textarea" data-field="content" rows="3" placeholder="该事项的具体情况、处理过程或反馈...">${escapeHtml(e.content)}</textarea></div>
+    ${photosRowHtml(e, '其他照片')}
+  `)).join('');
+  bindEntryCards('other', State.other.entries, renderOtherEntries, box);
+}
+
 function renderCultureEntries() {
   const box = document.getElementById('cultureEntries');
   if (!box) return;
@@ -2215,6 +2268,7 @@ function blankEntryOf(mod) {
   if (mod === 'voice') return { id: uid(), project: '', text: '', photos: [] };
   if (mod === 'rest') return { id: uid(), project: '', qualified: true, reason: '', photos: [] };
   if (mod === 'culture') return { id: uid(), project: '', followed: true, followers: '', weeklyOk: true, reason: '' };
+  if (mod === 'other') return { id: uid(), project: '', theme: '', content: '', photos: [] };
   if (mod === 'bp') return blankBpEntry();
   return { id: uid(), project: '', theme: '', coverCount: 0, summary: '', photos: [] };
 }
@@ -2930,7 +2984,7 @@ function buildPosterHtml() {
   if (!projList.length) {
     // 基础信息没选项目时，用各模块条目里填过的项目兜底
     const modProjects = []
-      .concat(S.train.entries || [], S.voice.entries || [], S.rest.entries || [], S.act.entries || [], S.culture.entries || [])
+      .concat(S.train.entries || [], S.voice.entries || [], S.rest.entries || [], S.act.entries || [], S.culture.entries || [], S.other.entries || [])
       .map(e => e.project).filter(Boolean);
     modProjects.forEach(p => { if (!projList.includes(p)) projList.push(p); });
   }
@@ -2971,7 +3025,7 @@ function buildPosterHtml() {
     const trProjN = modProjN(trRows);
     let tv = `${covPrefix(trProjN)}开展 <b>${trRows.length}</b> 场`;
     if (people) tv += `，覆盖 <b>${people}</b> 人`;
-    if (contents.length) tv += `；内容覆盖${escapeHtml(trunc(contents.join('、'), 90))}`;
+    if (contents.length) tv += `；内容覆盖${escapeHtml(contents.join('、'))}`;
     modRows.push({ k: '培训', v: tv });
   }
 
@@ -2984,7 +3038,7 @@ function buildPosterHtml() {
     const vProjN = modProjN((S.voice.entries || []).filter(e => String(e.text || '').trim() || (e.photos || []).length));
     modRows.push({
       k: '员工心声',
-      v: `${covPrefix(vProjN)}<b>${voiceLines.length}</b> 条${dup ? `<span class="warn">（重复 ${dup} 条）</span>` : ''}；主要诉求：${escapeHtml(trunc(voiceTxt.slice(0, 2).join('；'), 46))}`
+      v: `${covPrefix(vProjN)}<b>${voiceLines.length}</b> 条${dup ? `<span class="warn">（重复 ${dup} 条）</span>` : ''}；主要诉求：${escapeHtml(voiceTxt.slice(0, 2).join('；'))}`
     });
   }
 
@@ -3001,7 +3055,7 @@ function buildPosterHtml() {
     modRows.push({
       k: '休息室',
       v: `${covPrefix(modProjN(restRows))}检查 <b>${restRows.length}</b> 处，合格 <b>${restRows.length - badRest.length}</b> 处` +
-        (badRest.length ? `，<span class="warn">不合格 ${badRest.length} 处${reasons.length ? `（${escapeHtml(trunc(reasons.join('；'), 60))}）` : ''}</span>` : '')
+        (badRest.length ? `，<span class="warn">不合格 ${badRest.length} 处${reasons.length ? `（${escapeHtml(reasons.join('；'))}）` : ''}</span>` : '')
     });
   }
 
@@ -3056,12 +3110,31 @@ function buildPosterHtml() {
     const badWeekly = culRows.filter(e => e.weeklyOk === false);
     const withProj = (e, txt) => `${e.project ? e.project + '：' : ''}${txt}`;
     const followTxt = badFollow.length
-      ? `<span class="warn">抖音/视频号未全部关注（${escapeHtml(trunc(badFollow.map(e => withProj(e, (e.followers || '未填人员').trim())).join('；'), 30))}）</span>`
+      ? `<span class="warn">抖音/视频号未全部关注（${escapeHtml(badFollow.map(e => withProj(e, (e.followers || '未填人员').trim())).join('；'))}）</span>`
       : '<span class="ok">抖音/视频号均已关注</span>';
     const weeklyTxt = badWeekly.length
-      ? `<span class="warn">一周一例抽查不合格（${escapeHtml(trunc(badWeekly.map(e => withProj(e, (e.reason || '未填原因').trim())).join('；'), 30))}）</span>`
+      ? `<span class="warn">一周一例抽查不合格（${escapeHtml(badWeekly.map(e => withProj(e, (e.reason || '未填原因').trim())).join('；'))}）</span>`
       : '一周一例抽查合格';
     modRows.push({ k: '文化检查', v: `${covPrefix(modProjN(culRows))}${followTxt}；${weeklyTxt}` });
+  }
+
+  // 其他事项（开关打开且填过内容才显示）：每条都带项目名
+  if (S.other.enabled) {
+    const otherRows = (S.other.entries || []).filter(e =>
+      e && ((e.theme || '').trim() || (e.content || '').trim() || (e.photos || []).length));
+    if (otherRows.length) {
+      const seg = otherRows.map(e => {
+        const proj = (e.project || '').trim();
+        const theme = (e.theme || '').trim();
+        const body = (e.content || '').trim();
+        const head = [proj, theme].filter(Boolean).join('·');
+        return head ? (body ? `${head}：${body}` : head) : body;
+      }).filter(Boolean);
+      modRows.push({
+        k: '其他',
+        v: `${covPrefix(modProjN(otherRows))}<b>${otherRows.length}</b> 条${seg.length ? `（${escapeHtml(seg.join('；'))}）` : ''}`
+      });
+    }
   }
 
   // 一句话概览
@@ -3154,7 +3227,8 @@ function buildPosterHtml() {
     { key: 'bp',    label: '血压',   color: '#dc2626', list: S.bp.photos || [] },
     { key: 'voice', label: '心声',   color: '#7c3aed', list: S.voice.photos || [] },
     { key: 'rest',  label: '休息室', color: '#d97706', list: S.rest.photos || [] },
-    { key: 'act',   label: '活动',   color: '#16a34a', list: S.act.enabled ? (S.act.photos || []) : [] }
+    { key: 'act',   label: '活动',   color: '#16a34a', list: S.act.enabled ? (S.act.photos || []) : [] },
+    { key: 'other', label: '其他',   color: '#0891b2', list: S.other.enabled ? (S.other.photos || []) : [] }
   ];
   const feedPhotos = [];
   FEED.forEach(g => g.list.forEach((p, i) => {
@@ -3562,6 +3636,7 @@ function refreshProjectDependent() {
   renderVoiceEntries();
   renderRestEntries();
   renderActEntries();
+  renderOtherEntries();
   renderCultureEntries();
 }
 
@@ -3578,6 +3653,7 @@ function renderAll() {
   renderVoiceEntries();
   renderRestEntries();
   renderActEntries();
+  renderOtherEntries();
   renderCultureEntries();
   renderRiskList();
   renderBPTable();
@@ -3588,6 +3664,8 @@ function renderAll() {
   document.getElementById('baseDate').value = State.baseDate;
   document.getElementById('actEnabled').checked = State.act.enabled;
   document.getElementById('actBody').style.display = State.act.enabled ? 'block' : 'none';
+  document.getElementById('otherEnabled').checked = State.other.enabled;
+  document.getElementById('otherBody').style.display = State.other.enabled ? 'block' : 'none';
 
   // 照片
   if (window._bpUploader) window._bpUploader.renderThumbs();
@@ -4242,15 +4320,16 @@ const POSTER_EXPORT_CSS = `
   .p2-title .big{font-size:34px;font-weight:800;letter-spacing:3px;color:#111;}
   .p2-title .sub{margin-top:10px;font-size:18px;color:#000;letter-spacing:1px;font-weight:500;}
   .p2-sum{margin-top:20px;background:#F4F8FF;border-left:5px solid #007FFF;border-radius:6px;padding:16px 20px 14px;}
-  .p2-sum .lead{font-size:17px;line-height:1.8;color:#000;margin-bottom:4px;}
+  .p2-sum .lead{font-size:17px;line-height:31px;color:#000;margin-bottom:4px;}
   .p2-sum .lead b{color:#007FFF;font-weight:800;}
   .p2-sum .list{margin-top:2px;}
-  .p2-sum .sum-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:16.5px;line-height:1.75;color:#000;}
-  .p2-sum .sdot{flex:none;width:8px;height:8px;border-radius:50%;background:#007FFF;margin-top:.62em;}
-  .p2-sum .k{flex:none;display:inline-flex;align-items:baseline;width:5.2em;color:#007FFF;font-weight:700;white-space:nowrap;}
+  .p2-sum .sum-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:16.5px;line-height:29px;color:#000;}
+  .p2-sum .sdot{flex:none;width:8px;height:8px;border-radius:50%;background:#007FFF;margin-top:11px;}
+  .p2-sum .k{flex:0 0 5.2em;width:5.2em;display:inline-flex;align-items:baseline;height:29px;color:#007FFF;font-weight:700;white-space:nowrap;}
   .p2-sum .k .kk{flex:1;display:inline-flex;justify-content:space-between;}
-  .p2-sum .k em{font-style:normal;}
-  .p2-sum .v{flex:1;min-width:0;}
+  .p2-sum .k .kk span{display:block;line-height:29px;}
+  .p2-sum .k em{font-style:normal;line-height:29px;}
+  .p2-sum .v{display:block;flex:1 1 0;min-width:0;line-height:29px;overflow-wrap:anywhere;word-break:break-word;}
   .p2-sum .v b{font-weight:700;}
   .p2-sum .warn{color:#B71C1C;font-weight:700;}
   .p2-sum .warn.lv1{color:#E67E22;}
@@ -4461,7 +4540,7 @@ async function exportZip() {
 
     // 项目总表 = 基础信息已选 + 各模块条目里填过的（去重）
     const allProjects = State.projects.slice();
-    [State.train.entries, State.voice.entries, State.rest.entries, State.act.entries, State.culture.entries || []].forEach(list => {
+    [State.train.entries, State.voice.entries, State.rest.entries, State.act.entries, State.culture.entries || [], State.other.entries || []].forEach(list => {
       list.forEach(e => {
         if (e.project && !allProjects.includes(e.project)) allProjects.push(e.project);
       });
@@ -4573,6 +4652,12 @@ async function exportZip() {
         photoCount: State.act.photos.length,
         items: State.act.entries.filter(e => e.theme || e.summary || +e.coverCount || e.photos.length)
           .map(e => ({ project: e.project || '', theme: e.theme || '', coverCount: +e.coverCount || 0, summary: e.summary || '', photoCount: e.photos.length }))
+      },
+      other: {
+        enabled: State.other.enabled,
+        photoCount: State.other.photos.length,
+        items: State.other.entries.filter(e => e && (e.theme || e.content || e.photos.length))
+          .map(e => ({ project: e.project || '', theme: e.theme || '', content: e.content || '', photoCount: e.photos.length }))
       },
       nextMonthPlan: State.plan.items.filter(p => (p.projects || []).length || p.project || p.dispatchCenter)
         .map(p => ({
@@ -4712,6 +4797,17 @@ async function exportZip() {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actRows), '员工活动');
     }
 
+    // 其他事项 sheet（一条一行）
+    if (State.other.enabled) {
+      const otherRows = [['日期', '走场人', '项目', '主题', '内容', '照片数']];
+      State.other.entries.forEach(e => {
+        if (!(e.theme || e.content || e.photos.length)) return;
+        otherRows.push([State.baseDate, walkers.join('、'), e.project || '', e.theme || '', e.content || '', e.photos.length]);
+      });
+      if (otherRows.length === 1) otherRows.push([State.baseDate, walkers.join('、'), '', '', '', 0]);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(otherRows), '其他');
+    }
+
     // 次月走场计划 sheet（与「次月走场计划模板.xlsx」同结构）
     const planRows = buildPlanExportRows();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(planRows), '次月走场计划');
@@ -4771,6 +4867,7 @@ async function exportZip() {
     addPhotos(State.voice.entries, `${PHOTO_ROOT}/员工心声`);
     addPhotos(State.rest.entries, `${PHOTO_ROOT}/休息室检查`);
     if (State.act.enabled) addPhotos(State.act.entries, `${PHOTO_ROOT}/员工活动`);
+    if (State.other.enabled) addPhotos(State.other.entries, `${PHOTO_ROOT}/其他`);
     // 风险点照片：统一放在 走场照片汇总/风险点/，文件名带「风险点序号-」前缀
     State.risk.items.forEach((it, ri) => {
       (it.photos || []).forEach((p, pi) => {
@@ -4888,6 +4985,7 @@ function bindEvents() {
   document.getElementById('btnVoiceAdd').addEventListener('click', () => addEntry('voice', State.voice.entries, renderVoiceEntries));
   document.getElementById('btnRestAdd').addEventListener('click', () => addEntry('rest', State.rest.entries, renderRestEntries));
   document.getElementById('btnActAdd').addEventListener('click', () => addEntry('act', State.act.entries, renderActEntries));
+  document.getElementById('btnOtherAdd').addEventListener('click', () => addEntry('other', State.other.entries, renderOtherEntries));
   document.getElementById('btnCultureAdd').addEventListener('click', () => addEntry('culture', State.culture.entries, renderCultureEntries));
 
   // 风险点汇总
@@ -4926,6 +5024,14 @@ function bindEvents() {
   document.getElementById('actEnabled').addEventListener('change', e => {
     State.act.enabled = e.target.checked;
     document.getElementById('actBody').style.display = State.act.enabled ? 'block' : 'none';
+    renderPoster();
+  });
+
+  // 其他事项开关：打开时至少显示一条空白，关闭只隐藏不删内容
+  document.getElementById('otherEnabled').addEventListener('change', e => {
+    State.other.enabled = e.target.checked;
+    document.getElementById('otherBody').style.display = State.other.enabled ? 'block' : 'none';
+    if (State.other.enabled) renderOtherEntries();
     renderPoster();
   });
 
